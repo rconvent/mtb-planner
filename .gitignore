@@ -1,0 +1,22 @@
+# Data — never commit extracts, DEM tiles, or built artifacts
+/data/
+/out/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Env
+.env
+
+# IDE
+/.idea/
+.vscode/

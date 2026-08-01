@@ -1,0 +1,154 @@
+[project]
+name = "mtb-planner"
+version = "0.1.0"
+description = "Mountain bike route planner: time-budgeted loops and A-to-B routes scored on trail complexity"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = { text = "MIT" }
+
+dependencies = [
+    # web
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "jinja2>=3.1",
+    "cachetools>=5.5",
+    # numerics / graph
+    "numpy>=2.1",
+    "scipy>=1.14",
+    "numba>=0.61",
+    # geo
+    "shapely>=2.0",
+    "pyproj>=3.7",
+    "rasterio>=1.4",
+    "osmium>=4.0",
+    "gpxpy>=1.6",
+    # plumbing
+    "httpx>=0.28",
+    "typer>=0.15",
+    "rich>=13.9",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+mtb = "mtb_planner.cli.main:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.115",
+    "syrupy>=4.8",
+    "black>=24.10",
+    "isort>=5.13",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "bandit>=1.8",
+    "pre-commit>=4.0",
+    "playwright>=1.62.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mtb_planner"]
+
+# ---------------------------------------------------------------- formatting
+
+[tool.black]
+line-length = 100
+target-version = ["py313"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["mtb_planner", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "B",        # bugbear
+    "UP",       # pyupgrade
+    "SIM",      # simplify
+    "RET",      # return
+    "ARG",      # unused arguments
+    "PTH",      # use pathlib
+    "T20",      # no print()
+    "ANN",      # type annotations
+    "RUF",
+]
+ignore = [
+    "ANN401",   # allow typing.Any where genuinely needed
+    "B008",     # FastAPI Depends() in defaults is idiomatic
+    "RUF002",   # en dashes in prose docstrings are deliberate typography
+]
+
+[tool.ruff.lint.isort]
+# `tests` is a local package too, so its imports belong in the first-party
+# group rather than being sorted alongside third-party libraries.
+known-first-party = ["mtb_planner", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "ARG"]
+
+# ---------------------------------------------------------------- typing
+
+[tool.mypy]
+python_version = "3.13"
+packages = ["mtb_planner"]
+mypy_path = "src"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["osmium.*", "rasterio.*", "numba.*", "gpxpy.*", "scipy.*", "cachetools.*", "yaml.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------- tests
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Makes `tests.fixtures` importable without turning tests/ into a package.
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+markers = [
+    "unit: fast pure-function tests (default; whole suite should stay under 5s)",
+    "integration: exercises the API or a built artifact",
+    "slow: needs real extracts, DEM tiles, or network",
+    "golden: snapshot tests; regenerating these must be a conscious act",
+    "e2e: Playwright browser tests",
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src/mtb_planner"]
+branch = true
+omit = [
+    "*/cli/serve.py",
+    "*/ingest/download.py",
+    "*/elevation/dem_catalog.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@overload",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
