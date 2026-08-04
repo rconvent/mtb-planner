@@ -1,0 +1,30 @@
+# The area this planner covers: Benelux plus the Ardennes border strips.
+#
+# Benelux comes as one Geofabrik extract, which avoids a seam between Belgium
+# and Luxembourg exactly where the network needs to stay continuous. The
+# French and German regions are published as whole files, so the bounding box
+# below reduces them to their border strips during the build.
+
+artifact = "aoi-v1"
+
+# Merge chains that pass straight through a node. Turn off only to compare
+# against an uncontracted build.
+contract = true
+
+# min_lon, min_lat, max_lon, max_lat.
+# Covers all of Benelux and roughly 60 km into France and Germany.
+bbox = [1.9, 48.8, 7.9, 53.8]
+
+regions = [
+    # No combined Benelux extract exists; Geofabrik serves its index page for
+    # that path with a 200. The three countries are merged at ingest.
+    "europe/belgium",
+    "europe/netherlands",
+    "europe/luxembourg",
+    "europe/france/nord-pas-de-calais",
+    "europe/france/lorraine",
+    "europe/france/champagne-ardenne",
+    "europe/germany/nordrhein-westfalen",
+    "europe/germany/rheinland-pfalz",
+    "europe/germany/saarland",
+]
