@@ -1,0 +1,174 @@
+{# The one screen.
+
+   Semantic and complete before a line of JavaScript runs: the rail is a real
+   form, the dock is a real article, and every figure has a label. The script
+   fills the values in; it does not build the page. That keeps the markup
+   reviewable and means a failed script leaves a legible page rather than a
+   blank one.
+
+   MapLibre is loaded as a classic script with its integrity hash, so it
+   populates window.maplibregl before the module graph starts. The application
+   code is ES modules with no bundler: this is one screen with six values in it,
+   and a build step would cost more than it saves.
+#}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Trail plate — mountain bike route planner</title>
+    <meta
+      name="description"
+      content="Plan mountain bike loops and point-to-point routes against a time budget, scored on trail character."
+    />
+
+    <link rel="stylesheet" href="/static/vendor/maplibre-gl.css" />
+    <link rel="stylesheet" href="/static/css/fonts.css" />
+    <link rel="stylesheet" href="/static/css/tokens.css" />
+    <link rel="stylesheet" href="/static/css/app.css" />
+
+    {# Only the weight actually used above the fold. #}
+    <link
+      rel="preload"
+      href="/static/vendor/fonts/plex-mono-500.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <script
+      src="/static/vendor/maplibre-gl.js"
+      integrity="{{ vendor.maplibre_js_sri }}"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script type="module" src="/static/js/app.js" defer></script>
+  </head>
+
+  <body>
+    <main>
+      <div id="map" role="application" aria-label="Route map"></div>
+
+      <form class="rail grain" id="rail" autocomplete="off">
+        <header class="masthead">
+          <h1>Trail plate</h1>
+          <span class="sheet num" id="sheet">loading</span>
+        </header>
+
+        <div class="field">
+          <span class="label" id="mode-label">Shape</span>
+          <div class="segmented" id="modes" role="group" aria-labelledby="mode-label">
+            <button type="button" data-mode="loop" aria-pressed="true">Loop</button>
+            <button type="button" data-mode="ab" aria-pressed="false">A to B</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="label" id="start-label">Start</span>
+          <p class="num" id="start-readout" aria-labelledby="start-label">click the map</p>
+        </div>
+
+        <div class="field" id="end-field" hidden>
+          <span class="label" id="end-label">Finish</span>
+          <p class="num" id="end-readout" aria-labelledby="end-label">click the map again</p>
+        </div>
+
+        <div class="field">
+          <span class="label" id="profiles-label">Riding</span>
+          <div class="segmented" id="profiles" role="group" aria-labelledby="profiles-label"></div>
+          <p class="profile-note" id="profile-note"></p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="budget">Time</label>
+          <div class="budget">
+            <input type="range" id="budget" name="budget" min="15" max="600" step="5" value="90" />
+            <output class="num" id="budget-out" for="budget">1 h 30</output>
+          </div>
+          <p class="hint">
+            Time is the budget. Distance is measured and reported, never enforced.
+          </p>
+        </div>
+
+        <div class="field" id="variants-field">
+          <label class="label" for="variants">Options to offer</label>
+          <div class="budget">
+            <input type="range" id="variants" name="variants" min="1" max="6" step="1" value="3" />
+            <output class="num" id="variants-out" for="variants">3</output>
+          </div>
+        </div>
+
+        <button type="button" class="action" id="plan" disabled>Plan</button>
+
+        <p class="status" id="status" role="status" aria-live="polite" hidden></p>
+
+        <p class="hint" id="network-note" role="status" aria-live="polite"></p>
+
+        <p class="hint">
+          Difficulty is inferred from surface, track type and gradient wherever it
+          has not been surveyed. Access rules come from OpenStreetMap and can be
+          wrong or out of date; check signs on the ground before riding.
+        </p>
+      </form>
+
+      <article class="dock grain" id="dock" aria-label="Planned route" hidden>
+        <div class="readout">
+          <div>
+            <span class="label">Moving time</span>
+            <span class="figure" id="stat-time">--</span>
+          </div>
+          <div>
+            <span class="label">Climbing</span>
+            <span class="figure" id="stat-ascent">--</span><span class="unit">m</span>
+          </div>
+        </div>
+
+        <div class="secondary">
+          <div>
+            <span class="label">Distance</span>
+            <span class="figure" id="stat-distance">--</span><span class="unit">km</span>
+          </div>
+          <div>
+            <span class="label">Descent</span>
+            <span class="figure" id="stat-descent">--</span><span class="unit">m</span>
+          </div>
+          <div>
+            <span class="label">Average</span>
+            <span class="figure" id="stat-speed">--</span><span class="unit">km/h</span>
+          </div>
+        </div>
+
+        <div class="chips" id="chips"></div>
+
+        <section aria-label="Elevation">
+          <span class="label">Height gained from the start</span>
+          <div class="profile" id="profile-chart"></div>
+          <div class="profile-axis">
+            <span id="axis-start">0 km</span>
+            <span id="axis-end">--</span>
+          </div>
+        </section>
+
+        <section aria-label="Difficulty coverage">
+          <div class="coverage" id="coverage"></div>
+          <p class="hint" id="coverage-note"></p>
+        </section>
+
+        <ul class="candidates" id="candidates"></ul>
+
+        <ul class="hint" id="warnings"></ul>
+
+        <p class="field">
+          <a class="action" id="gpx" href="#" download>Download GPX</a>
+        </p>
+
+        <p class="hint">
+          Typical difficulty S<span id="stat-tech">-</span> on the mtb:scale, in the
+          direction ridden. Dashed sections of the route are estimated rather than
+          surveyed.
+        </p>
+      </article>
+    </main>
+  </body>
+</html>

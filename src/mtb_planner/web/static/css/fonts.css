@@ -1,0 +1,47 @@
+/* Self-hosted faces, latin subset, vendored under static/vendor/fonts.
+ *
+ * Two families with different jobs. Inter Tight carries the interface: it is
+ * narrow enough that an uppercase letterspaced label fits a 20rem rail without
+ * wrapping. IBM Plex Mono carries every number, with tabular figures on, so a
+ * column of times and distances aligns digit-for-digit like an instrument
+ * readout rather than shuffling as values change.
+ *
+ * Self-hosted rather than linked, because the whole app is meant to work from a
+ * local server with no network — and a webfont request to a third party is a
+ * request that fails in exactly the place this tool gets used.
+ *
+ * `font-display: swap` so text is readable immediately; the fallback stacks in
+ * tokens.css are close enough in metrics that the swap does not reflow much.
+ */
+
+@font-face {
+  font-family: "Inter Tight";
+  src: url("../vendor/fonts/inter-tight-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter Tight";
+  src: url("../vendor/fonts/inter-tight-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("../vendor/fonts/plex-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("../vendor/fonts/plex-mono-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}

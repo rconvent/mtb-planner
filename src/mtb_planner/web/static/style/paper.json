@@ -1,0 +1,11 @@
+{
+  "version": 8,
+  "name": "Field notes",
+  "metadata": {
+    "mtb:note": "The paper base a route is drawn on. There is deliberately no basemap here yet: generating the Protomaps vector tiles and the terrain-RGB hillshade from the project DEM is Phase 10, and shipping a third-party tile URL in the meantime would break the offline promise and put a stranger in the request path of a tool meant to run on a laptop in a car park. The route, the scale bar and the start marker are drawn over this, which is enough to judge shape, length and difficulty.",
+    "mtb:phase-10": "Add a basemap vector source with paths, tracks and bridleways promoted to first class and roads dropped to hairlines, plus a terrain raster-dem source rendered as hillshade at about 35% multiply with 10 m contours. The route layers are added at runtime and sit above whatever is inserted below them.",
+    "mtb:colour": "There is deliberately no background layer. The paper colour is --paper in tokens.css, and MapLibre cannot parse an oklch value, so duplicating it here would either fail to load or fork the palette. Leaving the canvas transparent lets the CSS background of the map container show through, which keeps one definition of paper."
+  },
+  "sources": {},
+  "layers": []
+}

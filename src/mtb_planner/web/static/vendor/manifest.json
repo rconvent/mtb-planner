@@ -1,0 +1,29 @@
+{
+  "maplibre_version": "5.6.0",
+  "files": {
+    "maplibre-gl.js": {
+      "sri": "sha384-GfxBM9x46BaAFxtCq39Fxir8fNZ4VDnwgfi6Kzi5/F1tAFsm0amuuV8kd+Pxzuf/",
+      "bytes": 939269
+    },
+    "maplibre-gl.css": {
+      "sri": "sha384-Nq6PQ+9vJPvw7U/VfDELyrWoGQMsy0gi6QShhaSrGzkpF5KkM40csg2leky+YMTd",
+      "bytes": 69422
+    },
+    "fonts/inter-tight-400.woff2": {
+      "sri": "sha384-GMm1rpgJiaoOypaDjzO+MDWSEZOyMrZywsijTolGAn5cp2oWOjRnZYPve/GuFapH",
+      "bytes": 22072
+    },
+    "fonts/inter-tight-600.woff2": {
+      "sri": "sha384-qlDQ7OSnwWrRusTDiTAFB+U/ecZg6Lm5YTaCXfAO5g2/J+FLlFD7PVpTde08DgdN",
+      "bytes": 22732
+    },
+    "fonts/plex-mono-400.woff2": {
+      "sri": "sha384-7Dj1kcarBNnSOe5ugvKxhsqsO6/UZ9t43S8WhcpXpIJYkTs2xMhZ2Wg5ZPF1R6aq",
+      "bytes": 14812
+    },
+    "fonts/plex-mono-500.woff2": {
+      "sri": "sha384-b+Uo6pJeKR/A/YwE+Ccs8iif7IiYFHIC2IwDufvhPOFzZ7a5QWUIcCnbDPqNAad4",
+      "bytes": 14988
+    }
+  }
+}

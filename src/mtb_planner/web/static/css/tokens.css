@@ -1,0 +1,126 @@
+/* Design tokens: the only file in the project that names a colour.
+ *
+ * Direction: "topographic field notes" — a survey sheet crossed with a Swiss
+ * instrument panel. Warm paper, dark ink, hairline rules, and numbers set in a
+ * tabular mono so columns of figures line up like an instrument readout.
+ *
+ * The accent IS the difficulty scale. One continuous oklch ramp, green through
+ * amber to red-violet, is used for the route line, the elevation fill and the
+ * difficulty chips alike: one ramp, three surfaces, one meaning. Nothing else
+ * in the interface competes for saturation, which is why a route reads as the
+ * subject of the page rather than as decoration on it.
+ *
+ * oklch throughout because the ramp has to be perceptually even. The same
+ * sweep in hsl bunches darkly around the reds and washes out through yellow,
+ * which would make S4 look like a bigger jump than S5.
+ */
+
+:root {
+  /* --- surface ------------------------------------------------------- */
+  --paper: oklch(97% 0.008 85);
+  --paper-raised: oklch(99% 0.006 85);
+  --paper-sunken: oklch(94% 0.01 85);
+  --ink: oklch(22% 0.02 250);
+  --ink-muted: oklch(46% 0.015 250);
+  /* Every label and hint is set in --ink-faint at 11 to 13 px, so it carries a
+   * real reading load and has to clear WCAG AA at 4.5:1 against --paper-raised.
+   * At the 62% it started life as it measured 3.53:1. A test enforces this. */
+  --ink-faint: oklch(47% 0.012 250);
+  --rule: oklch(22% 0.02 250 / 0.14);
+  --rule-strong: oklch(22% 0.02 250 / 0.28);
+
+  /* --- the difficulty ramp, mtb:scale S0 to S6 ----------------------- */
+  --tech-0: oklch(72% 0.14 145);
+  --tech-1: oklch(75% 0.15 120);
+  --tech-2: oklch(80% 0.15 95);
+  --tech-3: oklch(78% 0.16 70);
+  --tech-4: oklch(68% 0.19 40);
+  --tech-5: oklch(58% 0.21 15);
+  --tech-6: oklch(50% 0.2 340);
+
+  /* Mid-ramp, for anything that needs one accent rather than a scale. */
+  --accent: var(--tech-3);
+  --accent-quiet: oklch(78% 0.16 70 / 0.16);
+
+  /* --- state -------------------------------------------------------- */
+  --warn: oklch(58% 0.15 60);
+  --focus: oklch(55% 0.18 250);
+
+  /* --- type --------------------------------------------------------- */
+  --face-ui: "Inter Tight", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --face-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* A tight scale: the readout dominates and nothing headline-shaped
+   * competes with it, because the data is the headline. */
+  --text-micro: 0.6875rem;
+  --text-small: 0.8125rem;
+  --text-body: 0.9375rem;
+  --text-readout: clamp(1.75rem, 1.2rem + 1.6vw, 2.5rem);
+  --text-readout-small: 1.25rem;
+
+  --track-wide: 0.08em;
+  --track-tight: -0.015em;
+
+  /* --- rhythm -------------------------------------------------------
+   * Deliberately uneven. The rail and the dock are different widths with
+   * different insets, because a symmetric pair of panels reads as a template.
+   */
+  --gap-hair: 0.25rem;
+  --gap-tight: 0.5rem;
+  --gap: 0.875rem;
+  --gap-wide: 1.375rem;
+  --gap-section: 2rem;
+
+  --rail-width: 20.5rem;
+  --dock-width: 24rem;
+  --rail-inset: 1.25rem;
+  --dock-inset: 1rem;
+
+  --radius-rail: 3px;
+  --radius-dock: 10px;
+  --radius-chip: 2px;
+
+  /* --- depth --------------------------------------------------------
+   * Layered rather than one soft blur: a close contact shadow to seat the
+   * panel on the map, a wide ambient one to lift it off. */
+  --lift-rail:
+    0 1px 1px oklch(22% 0.02 250 / 0.06),
+    0 6px 14px -6px oklch(22% 0.02 250 / 0.18),
+    0 28px 48px -24px oklch(22% 0.02 250 / 0.22);
+  --lift-dock:
+    0 1px 1px oklch(22% 0.02 250 / 0.05),
+    0 10px 30px -12px oklch(22% 0.02 250 / 0.2);
+
+  /* --- motion ------------------------------------------------------- */
+  --fast: 130ms;
+  --normal: 260ms;
+  --draw: 600ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* The direction is a light survey sheet, so it does not flip to dark by
+ * default. A viewer who has asked for dark gets a dimmed paper rather than a
+ * different design: the ramp must stay legible against it, and inverting the
+ * ink would leave the difficulty colours floating.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: oklch(24% 0.012 260);
+    --paper-raised: oklch(28% 0.014 260);
+    --paper-sunken: oklch(20% 0.01 260);
+    --ink: oklch(94% 0.008 85);
+    --ink-muted: oklch(74% 0.01 85);
+    --ink-faint: oklch(76% 0.01 85);
+    --rule: oklch(94% 0.008 85 / 0.16);
+    --rule-strong: oklch(94% 0.008 85 / 0.3);
+    --accent-quiet: oklch(78% 0.16 70 / 0.22);
+    --lift-rail:
+      0 1px 1px oklch(0% 0 0 / 0.3),
+      0 6px 14px -6px oklch(0% 0 0 / 0.5),
+      0 28px 48px -24px oklch(0% 0 0 / 0.55);
+    --lift-dock:
+      0 1px 1px oklch(0% 0 0 / 0.28),
+      0 10px 30px -12px oklch(0% 0 0 / 0.45);
+  }
+}
