@@ -17,11 +17,11 @@ from mtb_planner.core.errors import BuildError, MtbPlannerError
 from mtb_planner.core.geo import BBox
 from mtb_planner.elevation.dem_catalog import tiles_for_bbox
 from mtb_planner.elevation.dem_sampler import DemSampler, require_tiles
+from mtb_planner.elevation.footprint import elevation_footprint
 from mtb_planner.graph.builder import build_graph
 from mtb_planner.graph.manifest import Manifest, SourceExtract
 from mtb_planner.graph.serialize import artifact_size_bytes, save_artifact
-from mtb_planner.ingest.pbf_reader import read_extracts
-from mtb_planner.ingest.tables import NodeTable
+from mtb_planner.ingest.pbf_reader import IngestResult, read_extracts
 
 console = Console()
 
@@ -43,18 +43,7 @@ class _BuildInputs:
     contract: bool
 
 
-def _covered_area(nodes: NodeTable) -> BBox:
-    """The area the ingested nodes actually span."""
-    lat, lon = nodes.degrees()
-    return BBox(
-        min_lon=float(lon.min()),
-        min_lat=float(lat.min()),
-        max_lon=float(lon.max()),
-        max_lat=float(lat.max()),
-    )
-
-
-def _elevation_sampler(nodes: NodeTable, dem_dir: Path, enabled: bool) -> DemSampler | None:
+def _elevation_sampler(ingest: IngestResult, dem_dir: Path, enabled: bool) -> DemSampler | None:
     """Prepare DEM sampling, failing before the build if tiles are absent.
 
     Checked up front rather than mid-build: a gap discovered halfway through
@@ -65,7 +54,7 @@ def _elevation_sampler(nodes: NodeTable, dem_dir: Path, enabled: bool) -> DemSam
         console.print("[yellow]Building without elevation.[/yellow] Climb will read as zero.")
         return None
 
-    require_tiles(dem_dir, tiles_for_bbox(_covered_area(nodes)))
+    require_tiles(dem_dir, tiles_for_bbox(elevation_footprint(ingest.ways, ingest.nodes)))
     return DemSampler(dem_dir)
 
 
@@ -178,7 +167,7 @@ def build(
         )
         started = time.perf_counter()
         ingest = read_extracts(inputs.paths, bbox=inputs.bbox)
-        sampler = _elevation_sampler(ingest.nodes, settings.dem_dir, enabled=elevation)
+        sampler = _elevation_sampler(ingest, settings.dem_dir, enabled=elevation)
         store = build_graph(ingest, contract_chains=inputs.contract, sampler=sampler)
         elapsed_s = time.perf_counter() - started
 
