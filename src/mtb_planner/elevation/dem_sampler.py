@@ -20,6 +20,7 @@ import rasterio
 from mtb_planner.config.logging import get_logger
 from mtb_planner.core.errors import DemTileMissingError
 from mtb_planner.elevation.dem_catalog import DemTile, tile_for
+from mtb_planner.elevation.dem_unpublished import load_unpublished
 
 logger = get_logger(__name__)
 
@@ -117,9 +118,27 @@ def require_tiles(tile_dir: Path, tiles: list[DemTile]) -> None:
     flat terrain is indistinguishable from correct output until a rider
     notices the ascent figures are nonsense.
 
+    Squares the archive never published are exempt. GLO-30 is land only, so
+    an area of interest that reaches open water always asks for a few tiles
+    that cannot be downloaded; demanding those makes the build impossible to
+    run rather than safe. `mtb fetch dem` records which ones the archive
+    refused, and only that recorded set is excused here.
     """
-    missing = [tile.name for tile in tiles if not (tile_dir / tile.filename).exists()]
+    unpublished = load_unpublished(tile_dir)
+    missing = [
+        tile.name
+        for tile in tiles
+        if tile.name not in unpublished and not (tile_dir / tile.filename).exists()
+    ]
     if not missing:
+        if unpublished:
+            wanted = sum(1 for tile in tiles if tile.name in unpublished)
+            if wanted:
+                logger.info(
+                    "%d of %d tile(s) covering this area are sea and were never published",
+                    wanted,
+                    len(tiles),
+                )
         return
 
     listed = ", ".join(sorted(missing)[:_MAX_LISTED_MISSING])

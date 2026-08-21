@@ -19,6 +19,11 @@ from mtb_planner.core.errors import DemTileMissingError
 from mtb_planner.core.geo import BBox
 from mtb_planner.elevation.dem_catalog import DemTile, tile_for, tiles_for_bbox
 from mtb_planner.elevation.dem_sampler import DemSampler, require_tiles
+from mtb_planner.elevation.dem_unpublished import (
+    load_unpublished,
+    record_unpublished,
+    registry_path,
+)
 from mtb_planner.elevation.profile import (
     DEAD_BAND_M,
     GRADE_BANDS,
@@ -154,6 +159,65 @@ def test_required_tiles_are_checked_before_a_build_starts(tmp_path: Path):
 
 def test_present_tiles_pass_the_check(ramp_tile: Path):
     require_tiles(ramp_tile, [DemTile(lat=49, lon=6)])
+
+
+# ------------------------------------------------- squares that are all sea
+
+
+def test_nothing_is_recorded_until_the_archive_refuses_something(tmp_path: Path):
+    record_unpublished(tmp_path, [])
+
+    assert load_unpublished(tmp_path) == frozenset()
+    assert not registry_path(tmp_path).exists()
+
+
+def test_recorded_squares_survive_a_reread(tmp_path: Path):
+    sea = DemTile(lat=53, lon=2).name
+
+    record_unpublished(tmp_path, [sea])
+
+    assert load_unpublished(tmp_path) == frozenset({sea})
+
+
+def test_a_later_fetch_does_not_forget_an_earlier_one(tmp_path: Path):
+    # Fetching one area must not erase what fetching another already
+    # established about the coastline.
+    first = DemTile(lat=53, lon=2).name
+    second = DemTile(lat=54, lon=3).name
+
+    record_unpublished(tmp_path, [first])
+    record_unpublished(tmp_path, [second])
+
+    assert load_unpublished(tmp_path) == frozenset({first, second})
+
+
+@pytest.mark.parametrize(
+    "content",
+    ["not json at all", '{"schema": 99, "unpublished": []}', '{"unpublished": ["x"]}'],
+)
+def test_an_unreadable_note_demands_every_tile_again(tmp_path: Path, content: str):
+    # Excusing a gap the note cannot account for is the dangerous direction;
+    # going back to insisting on every tile merely fails loudly.
+    registry_path(tmp_path).write_text(content, encoding="utf-8")
+
+    assert load_unpublished(tmp_path) == frozenset()
+
+
+def test_a_square_the_archive_never_published_does_not_block_a_build(tmp_path: Path):
+    # GLO-30 is land only. An area of interest reaching open water always
+    # wants a few tiles nobody can download, and demanding them makes the
+    # build impossible rather than safe.
+    sea = DemTile(lat=53, lon=2)
+    record_unpublished(tmp_path, [sea.name])
+
+    require_tiles(tmp_path, [sea])
+
+
+def test_an_unfetched_land_tile_still_blocks_a_build(tmp_path: Path):
+    record_unpublished(tmp_path, [DemTile(lat=53, lon=2).name])
+
+    with pytest.raises(DemTileMissingError, match="N49_00_E006"):
+        require_tiles(tmp_path, [DemTile(lat=53, lon=2), DemTile(lat=49, lon=6)])
 
 
 # --------------------------------------------------------------- profile
