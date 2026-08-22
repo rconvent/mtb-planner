@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from pathlib import Path
 
 import httpx
@@ -20,8 +21,13 @@ from mtb_planner.cli.parsing import parse_bbox
 from mtb_planner.config.aoi import DEFAULT_CONFIG_PATH, load_aoi_config
 from mtb_planner.config.logging import get_logger
 from mtb_planner.config.settings import get_settings
-from mtb_planner.core.errors import ExtractDownloadError, MtbPlannerError
+from mtb_planner.core.errors import (
+    DemTileUnpublishedError,
+    ExtractDownloadError,
+    MtbPlannerError,
+)
 from mtb_planner.elevation.dem_catalog import tiles_for_bbox
+from mtb_planner.elevation.dem_unpublished import record_unpublished
 from mtb_planner.ingest.catalog import DEFAULT_AOI_REGIONS, Region
 from mtb_planner.ingest.download import download_extract
 
@@ -84,7 +90,13 @@ def fetch_osm(
 
 
 def _download_tile(url: str, destination: Path) -> None:
-    """Stream one tile to disk, leaving nothing behind on failure."""
+    """Stream one tile to disk, leaving nothing behind on failure.
+
+    A 404 is reported separately from every other failure. The archive
+    answers 404 for squares that are entirely sea, which is expected and gets
+    remembered; a timeout or a 500 is a fetch that has to be retried, and
+    conflating the two writes a real tile off as ocean forever.
+    """
     partial = destination.with_suffix(destination.suffix + ".part")
     try:
         with httpx.stream("GET", url, timeout=_TILE_TIMEOUT_S, follow_redirects=True) as response:
@@ -92,6 +104,13 @@ def _download_tile(url: str, destination: Path) -> None:
             with partial.open("wb") as handle:
                 for chunk in response.iter_bytes(_CHUNK_BYTES):
                     handle.write(chunk)
+    except httpx.HTTPStatusError as exc:
+        partial.unlink(missing_ok=True)
+        if exc.response.status_code == HTTPStatus.NOT_FOUND:
+            msg = f"No tile published at {url}"
+            raise DemTileUnpublishedError(msg) from exc
+        msg = f"Failed to download {url}: {exc}"
+        raise ExtractDownloadError(msg) from exc
     except httpx.HTTPError as exc:
         partial.unlink(missing_ok=True)
         msg = f"Failed to download {url}: {exc}"
@@ -125,7 +144,8 @@ def fetch_dem(
     console.print(f"Fetching {len(tiles)} DEM tile(s) into [bold]{target_dir}[/bold]")
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    absent = 0
+    unpublished: list[str] = []
+    failed: list[str] = []
     for tile in tiles:
         destination = target_dir / tile.filename
         if destination.exists() and not force:
@@ -133,22 +153,37 @@ def fetch_dem(
             continue
         try:
             _download_tile(tile.url, destination)
-        except MtbPlannerError as exc:
+        except DemTileUnpublishedError as exc:
             # GLO-30 publishes land only, and a bounding box over the Channel or
             # the North Sea asks for tiles that were never made. That is the
             # normal shape of a rectangular area of interest, not a failure, so
-            # it is counted and reported rather than aborting the fetch and
+            # it is recorded and reported rather than aborting the fetch and
             # leaving the remaining tiles undownloaded.
-            absent += 1
+            unpublished.append(tile.name)
             console.print(f"  [dim]none[/dim] {tile.name} (no tile published)")
             logger.debug("No DEM tile for %s: %s", tile.name, exc)
+            continue
+        except MtbPlannerError as exc:
+            # Anything else is retryable. It is not written down as sea, and it
+            # is not allowed to pass for success: a build that went ahead on a
+            # timed-out tile would be flat over that square.
+            failed.append(tile.name)
+            console.print(f"  [red]fail[/red] {tile.name} ({exc})")
+            logger.warning("Could not fetch DEM tile %s: %s", tile.name, exc)
             continue
         console.print(
             f"  [green]OK[/green] {tile.name}  ({destination.stat().st_size / 1e6:.1f} MB)"
         )
 
-    if absent:
+    if unpublished:
+        record_unpublished(target_dir, unpublished)
         console.print(
-            f"{absent} of {len(tiles)} tiles are not published, which is expected "
-            f"where the box covers sea."
+            f"{len(unpublished)} of {len(tiles)} tiles are not published, which is expected "
+            f"where the box covers sea. Recorded so builds stop asking for them."
         )
+
+    if failed:
+        names = ", ".join(failed)
+        console.print(f"[red]{len(failed)} tile(s) could not be fetched: {names}[/red]")
+        console.print("[red]Re-run `mtb fetch dem` before building.[/red]")
+        raise typer.Exit(code=1)

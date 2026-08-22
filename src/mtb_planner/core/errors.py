@@ -27,6 +27,16 @@ class PbfParseError(BuildError):
     """An `.osm.pbf` file could not be read, or produced no usable ways."""
 
 
+class DemTileUnpublishedError(BuildError):
+    """The archive has no tile for this square because it is all sea.
+
+    Distinct from a transport failure: this one is expected wherever a
+    rectangular area of interest reaches past a coastline, and is recorded so
+    later builds stop asking for it. A timeout must never be mistaken for it,
+    or a tile that does exist gets written off as ocean.
+    """
+
+
 class DemTileMissingError(BuildError):
     """A DEM tile covering part of the AOI is unavailable.
 
