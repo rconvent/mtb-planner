@@ -12,13 +12,14 @@ from dataclasses import dataclass
 from mtb_planner.core.errors import NoRouteFoundError
 from mtb_planner.core.geo import BBox, LatLon
 from mtb_planner.cost.costvector import ArcCosts, materialise
-from mtb_planner.cost.profiles import RideProfile
+from mtb_planner.cost.profiles import MAX_DETOUR, RideProfile
 from mtb_planner.cost.speed import Rider
 from mtb_planner.graph.spatial_index import SpatialIndex
 from mtb_planner.graph.store import GraphStore
 from mtb_planner.routing.budget import Deadline
 from mtb_planner.routing.result import Route, build_route
 from mtb_planner.routing.router import Router
+from mtb_planner.routing.slack import spend_slack
 from mtb_planner.routing.snap import Snap, snap_point
 
 
@@ -30,6 +31,18 @@ class PointToPointPlan:
     start_snap: Snap
     end_snap: Snap
     settled: int
+    detour: float = 0.0
+    """The λ the returned route was planned under.
+
+    Equal to the profile's own unless a time budget left slack to spend, in
+    which case it is however much greedier the budget allowed.
+    """
+
+    within_budget: bool | None = None
+    """Whether the route fits the requested time budget; None when none was
+    asked for. False is an honest answer, not an error: the destination is
+    where the rider said, and the ride there simply takes longer than they
+    hoped."""
 
 
 def plan_point_to_point(
@@ -44,6 +57,7 @@ def plan_point_to_point(
     costs: ArcCosts | None = None,
     max_settled: int | None = None,
     deadline: Deadline | None = None,
+    budget_s: float | None = None,
 ) -> PointToPointPlan:
     """Plan the least-cost route between two coordinates.
 
@@ -52,6 +66,10 @@ def plan_point_to_point(
 
     `deadline` bounds how long the search may run. An explicit `max_settled`
     takes precedence, since a caller asking for a specific ceiling means it.
+
+    `budget_s` is slack, not a target. The route always goes where it was asked
+    to go; a budget only says how much time there is to spend on getting there
+    over better ground. See `slack.py` for how that is spent.
     """
     arc_costs = costs or materialise(store, profile, rider)
 
@@ -92,9 +110,28 @@ def plan_point_to_point(
             ),
         )
 
+    detour = profile.detour
+    within_budget: bool | None = None
+    if budget_s is not None:
+        spent = spend_slack(
+            store,
+            arc_costs,
+            start_snap.node,
+            end_snap.node,
+            budget_s=budget_s,
+            floor=profile.detour,
+            ceiling=max(profile.detour, MAX_DETOUR),
+            baseline=result,
+            deadline=deadline,
+        )
+        result, arc_costs = spent.result, spent.costs
+        detour, within_budget = spent.detour, spent.within_budget
+
     return PointToPointPlan(
         route=build_route(store, start_snap.node, result.arcs, arc_costs.time_s),
         start_snap=start_snap,
         end_snap=end_snap,
         settled=result.settled,
+        detour=detour,
+        within_budget=within_budget,
     )

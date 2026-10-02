@@ -19,7 +19,8 @@ from fastapi.testclient import TestClient
 from mtb_planner.api.concurrency import PlanSlots
 from mtb_planner.api.deps import plan_slots, route_cache
 from mtb_planner.config.settings import get_settings
-from tests.fixtures.networks import FAR_AWAY, GRID_NW, GRID_SE
+from mtb_planner.cost.profiles import get_profile
+from tests.fixtures.networks import FAR_AWAY, GRID_NW, GRID_SE, LATTICE_NE, LATTICE_SW
 
 pytestmark = pytest.mark.integration
 
@@ -152,6 +153,64 @@ def test_slider_overrides_are_accepted(routing_client: TestClient):
     response = plan(routing_client, profile="tech", tech_target=1.5, detour=0.5, power_w=250.0)
 
     assert response.status_code == 200
+
+
+def test_the_response_says_how_far_it_was_willing_to_detour(routing_client: TestClient):
+    # Part of reproducing a reported route: with a budget the λ is chosen per
+    # request, so the profile id alone no longer identifies what was searched.
+    meta = plan(routing_client, profile="tech").json()["meta"]
+
+    assert meta["detour"] == pytest.approx(get_profile("tech").detour)
+
+
+def test_a_time_budget_is_accepted_and_answered(routing_client: TestClient):
+    response = plan(routing_client, budget_minutes=120)
+
+    assert response.status_code == 200
+    route = response.json()["data"]["routes"][0]
+    assert route["within_budget"] is True
+    assert route["stats"]["moving_time_s"] <= 120 * 60
+
+
+def test_a_budget_the_ride_cannot_meet_is_answered_with_a_warning(lattice_client: TestClient):
+    # Not an error: the rider still gets a route to where they asked to go, and
+    # is told how long it actually takes. The lattice is used because the
+    # ardennes fixture is 1.5 km of trail, which fits the smallest budget the
+    # API accepts and so cannot exercise this at all.
+    response = lattice_client.post(
+        "/api/routes/point-to-point",
+        json=plan_body(start=LATTICE_SW, end=LATTICE_NE, budget_minutes=15),
+    )
+
+    assert response.status_code == 200
+    route = response.json()["data"]["routes"][0]
+    assert route["within_budget"] is False
+    assert any("longer than the 15 you allowed" in note for note in route["warnings"])
+
+
+def test_more_time_buys_more_of_what_the_profile_wants(lattice_client: TestClient):
+    # The complaint this answers: the time control did nothing for a
+    # point-to-point route, because the budget was never sent and nothing would
+    # have read it. A larger budget must be visible in the answer.
+    def detour_at(minutes: int) -> float:
+        response = lattice_client.post(
+            "/api/routes/point-to-point",
+            json=plan_body(start=LATTICE_SW, end=LATTICE_NE, budget_minutes=minutes),
+        )
+        return response.json()["meta"]["detour"]
+
+    assert detour_at(600) > detour_at(15)
+
+
+def test_no_budget_leaves_the_verdict_unstated(routing_client: TestClient):
+    route = plan(routing_client).json()["data"]["routes"][0]
+
+    assert route["within_budget"] is None
+
+
+@pytest.mark.parametrize("minutes", [14, 601])
+def test_a_budget_outside_the_allowed_range_is_rejected(routing_client: TestClient, minutes: int):
+    assert plan(routing_client, budget_minutes=minutes).status_code == 422
 
 
 def test_the_same_request_plans_the_same_route_twice(routing_client: TestClient):

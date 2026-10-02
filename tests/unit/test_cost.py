@@ -34,7 +34,7 @@ from mtb_planner.cost.speed import (
     speed_table,
 )
 from mtb_planner.elevation.profile import GRADE_BANDS
-from mtb_planner.features.enums import SurfaceClass
+from mtb_planner.features.enums import PAVED_SURFACES, SurfaceClass
 from mtb_planner.graph.store import GraphStore
 
 pytestmark = pytest.mark.unit
@@ -267,6 +267,54 @@ def test_difficulty_is_a_band_match_not_more_is_better(ardennes_graph: GraphStor
 
 
 # --------------------------------------------------------------- the invariant
+
+
+def test_a_sealed_road_is_never_a_technicality_match(lattice_graph: GraphStore):
+    # The band scores how close an edge is to the difficulty the rider wants,
+    # and a road scores tech 0. Ungated, a low target paid tarmac a bonus large
+    # enough to cancel the profile's own dislike of it, and the planner sent
+    # mountain bikers down the road. Moving the target must therefore change
+    # what unpaved edges are worth and leave paved ones exactly where they were.
+    features = lattice_graph.features
+    grade = np.zeros(lattice_graph.n_edges, dtype=np.float64)
+    paved = np.isin(features.surface_class, [int(surface) for surface in PAVED_SURFACES])
+    assert paved.any() and (~paved).any(), "fixture needs both surfaces to compare"
+
+    base = get_profile("xc")
+    near = preference(features, grade, base.with_overrides(tech_target=0.0))
+    far = preference(features, grade, base.with_overrides(tech_target=5.0))
+
+    np.testing.assert_allclose(near[paved], far[paved])
+    assert not np.allclose(near[~paved], far[~paved])
+
+
+def test_rescaling_the_detour_matches_materialising_it(ardennes_graph: GraphStore):
+    # The point-to-point slack search re-costs an existing vector instead of
+    # solving the physics again. It is only allowed to do that while the two
+    # routes agree exactly.
+    profile = get_profile("flow")
+    greedier = 3.0
+
+    direct = materialise(ardennes_graph, profile.with_overrides(detour=greedier))
+    rescaled = materialise(ardennes_graph, profile).with_detour(greedier)
+
+    np.testing.assert_allclose(rescaled.cost, direct.cost)
+    np.testing.assert_allclose(rescaled.time_s, direct.time_s)
+    np.testing.assert_allclose(rescaled.preference, direct.preference)
+    np.testing.assert_array_equal(rescaled.allowed, direct.allowed)
+
+
+def test_rescaling_leaves_the_measurements_alone(ardennes_graph: GraphStore):
+    # Only the cost may move. Time, distance and preference are what the rider
+    # is shown and what the budget is tested against.
+    costs = materialise(ardennes_graph, get_profile("flow"))
+
+    rescaled = costs.with_detour(5.0)
+
+    np.testing.assert_allclose(rescaled.time_s, costs.time_s)
+    np.testing.assert_allclose(rescaled.distance_m, costs.distance_m)
+    np.testing.assert_allclose(rescaled.preference, costs.preference)
+    assert np.all(rescaled.cost >= costs.cost - 1e-9)
 
 
 def test_cost_never_dips_below_time(ardennes_graph: GraphStore):

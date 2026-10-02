@@ -86,6 +86,9 @@ def _report(plan: PointToPointPlan, loaded: _Loaded, plan_s: float, written: Pat
         f"{stats.moving_time_min:.0f} min  ({stats.average_speed_km_h:.1f} km/h average)",
     )
     table.add_row("segments", f"{stats.n_edges:,}")
+    if plan.within_budget is not None:
+        table.add_row("time budget", "met" if plan.within_budget else "exceeded")
+        table.add_row("detour spent", f"{plan.detour:.2f}")
     table.add_row("track points", f"{stats.n_points:,}")
     if stats.dismount_m > 0:
         table.add_row("on foot", f"{stats.dismount_m:.0f} m")
@@ -115,6 +118,15 @@ def route(
     ),
     name: str = typer.Option("MTB route", "--name", help="Track name recorded in the GPX."),
     profile: str = typer.Option("flow", "--profile", help="Ride profile: xc, flow, tech, gravity."),
+    minutes: int = typer.Option(
+        None,
+        "--minutes",
+        help=(
+            "Time available, in minutes. Slack rather than a target: the route still "
+            "goes where you asked, and time left over after the quickest way there is "
+            "spent on better ground."
+        ),
+    ),
 ) -> None:
     """Plan a route between two points and write it as a GPX track."""
     settings = get_settings()
@@ -134,6 +146,7 @@ def route(
             max_snap_distance_m=settings.max_snap_distance_m,
             profile=ride_profile,
             coverage=loaded.store.bbox(),
+            budget_s=None if minutes is None else float(minutes) * 60.0,
         )
         plan_s = time.perf_counter() - began
     except MtbPlannerError as exc:

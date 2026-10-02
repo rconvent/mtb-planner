@@ -22,7 +22,7 @@ from mtb_planner.api.schemas.planning import (
     geometry_of,
     stats_of,
 )
-from mtb_planner.cost.profiles import FEATURE_NAMES, RideProfile
+from mtb_planner.cost.profiles import FEATURE_NAMES, MAX_DETOUR, RideProfile
 from mtb_planner.routing.result import Route, RouteStats
 
 pytestmark = pytest.mark.unit
@@ -130,7 +130,7 @@ def test_a_minimal_request_defaults_to_a_profile_and_no_overrides():
         ("tech_target", -0.1),
         ("tech_target", 6.1),
         ("detour", -0.1),
-        ("detour", 3.1),
+        ("detour", MAX_DETOUR + 0.1),
         ("power_w", MIN_POWER_W - 1),
         ("power_w", MAX_POWER_W + 1),
         ("profile", ""),

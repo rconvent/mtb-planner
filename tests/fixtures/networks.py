@@ -140,6 +140,15 @@ LATTICE_CENTRE = (
     _LATTICE_LON0 + _LATTICE_DLON * (LATTICE_SIZE // 2),
 )
 
+#: Opposite corners of the lattice, used as point-to-point endpoints. Far
+#: enough apart that many routes connect them, which is what a test about
+#: choosing between routes needs.
+LATTICE_SW = (_LATTICE_LAT0, _LATTICE_LON0)
+LATTICE_NE = (
+    _LATTICE_LAT0 + _LATTICE_DLAT * (LATTICE_SIZE - 1),
+    _LATTICE_LON0 + _LATTICE_DLON * (LATTICE_SIZE - 1),
+)
+
 #: Way tags cycled through the lattice, so preference, technicality and surface
 #: all vary across it. A uniform lattice would make every loop equally good and
 #: leave scoring and diversification with nothing to distinguish.

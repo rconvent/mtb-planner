@@ -15,6 +15,13 @@
 # `detour` is willingness to spend time getting somewhere better. At 0 the
 # planner returns the fastest route; at 2 it will spend three times as long
 # on tarmac as on a perfect trail.
+#
+# It buys back a speed difference before it buys any trail: tarmac is about
+# 1.5x faster per metre than singletrack in this model, so the first stretch of
+# every lambda goes on cancelling that out rather than on finding anything. The
+# values below are set from the measured cost per metre of each surface, so
+# each profile accepts roughly the detour its description promises - a quarter
+# longer than the road for cross-country, about twice as long for technical.
 
 profiles:
   - id: xc
@@ -23,7 +30,7 @@ profiles:
     tech_target: 1.0
     tech_sigma: 0.8
     tech_max: 3.0
-    detour: 0.8
+    detour: 1.2
     weights:
       tech: 1.5
       singletrack: 0.7
@@ -43,7 +50,7 @@ profiles:
     tech_target: 1.5
     tech_sigma: 0.7
     tech_max: 3.0
-    detour: 1.2
+    detour: 1.9
     weights:
       tech: 1.5
       singletrack: 0.8
@@ -63,7 +70,7 @@ profiles:
     tech_target: 3.0
     tech_sigma: 1.2
     tech_max: 5.0
-    detour: 1.5
+    detour: 2.6
     weights:
       tech: 1.8
       singletrack: 1.0
@@ -87,7 +94,7 @@ profiles:
     tech_target: 2.5
     tech_sigma: 1.0
     tech_max: 5.0
-    detour: 2.0
+    detour: 3.4
     weights:
       tech: 1.5
       singletrack: 0.6

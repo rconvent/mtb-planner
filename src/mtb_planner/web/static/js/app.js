@@ -24,6 +24,7 @@ const dom = {
   profileNote: el("profile-note"),
   budget: el("budget"),
   budgetOut: el("budget-out"),
+  budgetHint: el("budget-hint"),
   variants: el("variants"),
   variantsOut: el("variants-out"),
   plan: el("plan"),
@@ -101,8 +102,13 @@ function renderStart() {
 
   dom.endField.hidden = !ab;
   // A point-to-point route has one answer, so there is nothing to offer options
-  // over; the time budget becomes slack to spend rather than a target to hit.
+  // over; the time budget becomes slack to spend rather than a target to hit,
+  // and the hint has to say so or the slider looks broken when the route comes
+  // back the same length as before.
   dom.variantsField.hidden = ab;
+  dom.budgetHint.textContent = ab
+    ? "Time is slack. Whatever is left after the quickest way there is spent on better ground."
+    : "Time is the budget. Distance is measured and reported, never enforced.";
 
   dom.plan.disabled = !state.start || (ab && !state.end);
   map.showFinish(ab ? state.end : null);
@@ -292,7 +298,9 @@ async function plan() {
 
     if (body.meta.truncated) {
       say("The search ran out of time, so these are the best found so far.");
-    } else if (results.some((loop) => loop.within_budget === false)) {
+    } else if (state.mode !== "ab" && results.some((loop) => loop.within_budget === false)) {
+      // Point-to-point says this in the route's own warnings, where it can name
+      // how long the ride actually takes rather than only that it does not fit.
       say("No loop fitted the time exactly; the closest are shown.");
     }
   } catch (error) {
@@ -331,6 +339,16 @@ function syncUrl() {
   history.replaceState(null, "", writeState(state) || location.pathname);
 }
 
+/** Whether the current state describes a request the planner can answer.
+ *
+ * The same condition that disables the Plan button. A slider must consult it
+ * too: in A-to-B with no finish placed yet, replanning would quietly fall
+ * through to generating a loop, which is not what the rider is looking at.
+ */
+function canPlan() {
+  return Boolean(state.start) && (state.mode !== "ab" || Boolean(state.end));
+}
+
 // --- boot --------------------------------------------------------------
 
 dom.budget.addEventListener("input", () => {
@@ -339,7 +357,7 @@ dom.budget.addEventListener("input", () => {
 });
 dom.budget.addEventListener("change", () => {
   syncUrl();
-  if (state.start) plan();
+  if (canPlan()) plan();
 });
 
 dom.variants.addEventListener("input", () => {
@@ -348,7 +366,7 @@ dom.variants.addEventListener("input", () => {
 });
 dom.variants.addEventListener("change", () => {
   syncUrl();
-  if (state.start) plan();
+  if (canPlan()) plan();
 });
 
 for (const button of dom.modes.querySelectorAll("button")) {
@@ -361,7 +379,7 @@ for (const button of dom.modes.querySelectorAll("button")) {
     syncUrl();
     renderModes();
     renderStart();
-    if (state.start && (mode !== "ab" || state.end)) plan();
+    if (canPlan()) plan();
   });
 }
 
@@ -393,7 +411,7 @@ fetchHealth()
     if (!graph.loaded) {
       say(graph.error ?? "The routing graph is not loaded, so planning is unavailable.");
       dom.plan.disabled = true;
-    } else if (state.start && (state.mode !== "ab" || state.end)) {
+    } else if (canPlan()) {
       plan();
     }
   })

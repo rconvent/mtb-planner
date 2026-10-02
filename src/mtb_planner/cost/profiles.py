@@ -19,6 +19,13 @@ from mtb_planner.ingest.tags import MAX_MTB_SCALE
 
 DEFAULT_PROFILES_PATH = Path("config/profiles.yaml")
 
+#: The greediest a search may be about trading time for better ground. It is
+#: both the cap on a slider override and the ceiling the point-to-point slack
+#: search bisects towards, so the two can never disagree about what "as far as
+#: I am willing to go" means. Beyond this the route stops resembling a way of
+#: getting anywhere.
+MAX_DETOUR = 6.0
+
 #: Every feature a profile may weight. A weight for anything else is a typo,
 #: and silently ignoring it would leave the rider wondering why the slider did
 #: nothing.
@@ -48,7 +55,7 @@ class ProfileSpec(BaseModel):
     tech_target: float = Field(ge=0.0, le=MAX_MTB_SCALE)
     tech_sigma: float = Field(gt=0.0)
     tech_max: float = Field(ge=0.0, le=MAX_MTB_SCALE)
-    detour: float = Field(ge=0.0)
+    detour: float = Field(ge=0.0, le=MAX_DETOUR)
     weights: dict[str, float]
 
 

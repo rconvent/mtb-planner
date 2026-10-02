@@ -10,7 +10,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from mtb_planner.api.schemas.common import LatLonModel
-from mtb_planner.cost.profiles import FEATURE_NAMES, RideProfile
+from mtb_planner.cost.profiles import FEATURE_NAMES, MAX_DETOUR, RideProfile
 from mtb_planner.graph.store import GraphStore
 from mtb_planner.ingest.tags import MAX_MTB_SCALE
 from mtb_planner.routing.candidates import LoopMetrics
@@ -73,6 +73,13 @@ class ProfileList(BaseModel):
     features: tuple[str, ...] = FEATURE_NAMES
 
 
+#: Bounds on a time budget, in minutes. Below the lower bound there is not
+#: enough time for a loop to leave and return; above the upper one its search
+#: ball covers a whole country.
+MIN_BUDGET_MINUTES = 15
+MAX_BUDGET_MINUTES = 600
+
+
 class PlanRequest(BaseModel):
     """A point-to-point planning request."""
 
@@ -81,16 +88,26 @@ class PlanRequest(BaseModel):
     start: LatLonModel
     end: LatLonModel
     profile: str = Field(default="flow", min_length=1)
+    budget_minutes: int | None = Field(
+        default=None,
+        ge=MIN_BUDGET_MINUTES,
+        le=MAX_BUDGET_MINUTES,
+        description=(
+            "Time available for the ride. Slack, not a target: the route goes "
+            "where it was asked to go, and whatever time is left over after the "
+            "quickest way there is spent on better ground instead. Omitted, the "
+            "profile's own willingness to detour decides."
+        ),
+    )
     tech_target: float | None = Field(default=None, ge=0.0, le=MAX_MTB_SCALE)
-    detour: float | None = Field(default=None, ge=0.0, le=3.0)
+    detour: float | None = Field(default=None, ge=0.0, le=MAX_DETOUR)
     power_w: float | None = Field(default=None, ge=MIN_POWER_W, le=MAX_POWER_W)
 
+    @property
+    def budget_s(self) -> float | None:
+        """The budget in seconds, which is what the planner works in."""
+        return None if self.budget_minutes is None else float(self.budget_minutes) * 60.0
 
-#: Bounds on a loop's time budget, in minutes. Below the lower bound there is
-#: not enough time to leave and return; above the upper one the search ball
-#: covers a whole country.
-MIN_BUDGET_MINUTES = 15
-MAX_BUDGET_MINUTES = 600
 
 #: How many loops a single request may ask for.
 MAX_VARIANTS = 6
@@ -106,7 +123,7 @@ class LoopRequest(BaseModel):
     profile: str = Field(default="flow", min_length=1)
     variants: int = Field(default=3, ge=1, le=MAX_VARIANTS)
     tech_target: float | None = Field(default=None, ge=0.0, le=MAX_MTB_SCALE)
-    detour: float | None = Field(default=None, ge=0.0, le=3.0)
+    detour: float | None = Field(default=None, ge=0.0, le=MAX_DETOUR)
     power_w: float | None = Field(default=None, ge=MIN_POWER_W, le=MAX_POWER_W)
     seed: int | None = Field(
         default=None,

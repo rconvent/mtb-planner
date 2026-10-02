@@ -170,6 +170,71 @@ as the survey plate it was meant to be. What is still missing is terrain: no
 hillshade and no contours, so the map is flat in a tool whose whole subject is
 climbing and descending.
 
+## Why A-to-B came back on the road
+
+Reported from the Belgian build: point-to-point routes looked like a road
+router's, and neither the profile nor the time slider seemed to change them.
+Three separate causes, measured on `be-v1` (1.6M nodes / 2.07M edges), all now
+closed.
+
+**The time slider was not wired to anything.** `PlanRequest` had no time field
+at all, and `api.js` sent `{start, end, profile}`. `renderStart()` hid the
+variants field in A-to-B and left Time visible next to a comment saying the
+budget "becomes slack to spend rather than a target to hit" — an intent nothing
+implemented. It is implemented now; see `routing/slack.py`.
+
+**The penalty was spending itself on the speed difference.** `cost = t·(1 + λ(1
+− p_norm))` multiplies *time*, and tarmac is about 1.5x faster per metre than
+singletrack in the speed model (0.263 s/m against 0.399). So the first stretch
+of every λ goes on cancelling that out before it buys any trail. Effective cost
+per metre over the whole graph, before:
+
+| profile | λ | paved | singletrack | trail wins by |
+|---|---|---|---|---|
+| xc | 0.8 | 0.388 | 0.405 | *nothing — the road was cheaper* |
+| flow | 1.2 | 0.528 | 0.419 | 26% |
+| tech | 1.5 | 0.615 | 0.429 | 43% |
+| gravity | 2.0 | 0.711 | 0.516 | 38% |
+
+Under `xc` the planner preferred the road unless the trail was outright
+shorter, and `flow` would only accept a trail up to a quarter longer — less than
+linking forest trails usually costs. λ is now 1.2 / 1.9 / 2.6 / 3.4, chosen
+from those measurements to give roughly 30% / 64% / 97% / 75% tolerance.
+
+**The technicality band was paying tarmac a bonus.** The band scores how close
+an edge sits to the difficulty the rider wants, and a sealed road scores tech 0.
+Under `xc` — target 1.0, sigma 0.8 — that put a road at 0.48 of a perfect match,
+worth **+0.71** against a paved weight of only −0.60. Decomposed, a paved edge
+came to −0.23 where singletrack came to +2.11. The band is now gated on unpaved,
+which is the change that flipped `xc`: paved cost per metre 0.388 → 0.441 with
+λ untouched. A smooth road is not a mild version of a trail.
+
+Measured effect, La Roche → Houffalize, 23 km through the Ardennes:
+
+| profile | paved before | paved after | singletrack before | after |
+|---|---|---|---|---|
+| xc | 69.2% | 34.2% | 18.8% | 49.1% |
+| tech | 44.6% | 26.5% | 46.7% | 63.9% |
+
+**Slack is spent by bisecting λ, not by a second search.** A budget on a
+point-to-point route is slack, not a target: the destination is fixed, so the
+only question is what to do with the time left over after the quickest way
+there. Raising λ raises both preference and elapsed time, so "the best route
+inside this budget" becomes "the largest λ whose route still fits" — one scalar,
+found by bisection, instead of a resource-constrained shortest path, which is
+NP-hard. `ArcCosts.with_detour` re-costs an already-materialised vector (~15 ms)
+rather than solving the physics again (~500 ms), so six probes cost about 20 ms
+on top of a 9 ms search. Same pair under `flow`: 131.7 min and 44.6% paved with
+no budget; 167.0 min and 24.6% paved given three hours.
+
+A budget the ride cannot meet is **reported, not enforced**: the rider gets the
+route to where they asked to go, `within_budget` is false, and a warning names
+the real duration. Trimming the route to fit would mean not arriving.
+
+Loop generation was checked for a regression, since `plan_loops` bounds its
+Dijkstra by `(1 + λ)·tree_time`. There is none: 90-minute `flow` went 7,389 →
+6,769 settled nodes, and wall clock is unchanged at roughly 300–350 ms.
+
 ## What the follow-up work closed
 
 Four of the five Phase 9 concerns, each with tests.
@@ -192,7 +257,9 @@ which is the wrong thing to make a rider believe.
 **Point-to-point has a UI.** A Loop / A-to-B control in the rail. In A-to-B the
 first click sets the start and the second the finish, then it alternates, so
 placing a pin never needs a mode switch as well. The variants slider hides,
-because a point-to-point route has one answer and there is nothing to rank.
+because a point-to-point route has one answer and there is nothing to rank. Time
+stays, and its hint changes to say what it means there — slack to spend on
+better ground rather than a target to hit.
 
 **A loop survives a re-read.** `CachedRoute` now carries the metrics, score and
 budget verdict, and `RouteModel` gained those fields as optionals — null for a
@@ -366,6 +433,18 @@ the A* heuristic stays admissible, a budget-limited search has a provable
 bound, and reported figures are measured rather than inferred from the thing
 that drove the routing. Never switch to `cost = time + penalty`; additive
 penalties break all three. Tests in `tests/unit/test_cost.py` pin this.
+
+**Difficulty is a property of trail, not of every surface.** The technicality
+band match is gated on unpaved. Ungated, a sealed road scores tech 0, and any
+profile with a low target pays it a bonus for being close — which is how the XC
+profile came to prefer the road. Re-introducing the ungated band would put it
+straight back.
+
+**λ is the only thing the slack search may move.** `ArcCosts.with_detour`
+re-costs an existing vector; time, distance and preference must come back
+untouched, or the figures shown to the rider stop matching the search that chose
+the route. `tests/unit/test_slack.py` pins that, and pins that no budget between
+the quickest route and the greediest one ever returns a route over budget.
 
 **Legal exclusions are hard.** `bicycle=no` and `access=private|no` remove ways
 from the graph. They are never soft penalties. `access=forestry` is *not* a
@@ -551,6 +630,16 @@ From real OSM data (Luxembourg, 47 MB extract → 164,650 nodes / 204,175 edges)
   which is a `ARTIFACT_SCHEMA_VERSION` bump and a rebuild. Partial consolation:
   the `signed_mtb` feature already biases the cost function towards signed edges,
   so signed trails are *preferred* — they are just not used as ready-made loops.
+- **The slack search saturates at the λ ceiling.** Above the budget that
+  affords `MAX_DETOUR = 6.0`, more time buys nothing: the planner has already
+  taken all the trail it wants, and every larger budget returns the same route.
+  Defensible — unspent slack is slack — but it means the slider goes quiet at
+  the top of its range. Below that, five bisection steps locate λ to about 3% of
+  the range, so a little of the budget is routinely left unspent.
+- **Nothing calibrates λ against what a rider would actually accept.** The four
+  values are set from measured cost per metre so each profile tolerates roughly
+  the detour its description promises. That the promise is the right one is a
+  judgement, not a measurement, and the GPX calibration harness would inform it.
 - **A budget the area cannot fill returns an error, not the longest loop
   available.** `_pivot_sectors` looks for turning points in a band around
   `f_pivot · budget`; if the whole reachable network is smaller than that band,

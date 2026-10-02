@@ -48,6 +48,7 @@ def _as_model(
     """Shape a planned route for the wire."""
     return RouteModel(
         route_id=route_id,
+        within_budget=plan.within_budget,
         geometry=geometry_of(plan.route),
         stats=stats_of(plan.route),
         segments=segments_of(store, plan.route),
@@ -65,7 +66,9 @@ def _as_model(
     )
 
 
-def _warnings(plan: PointToPointPlan, max_snap_distance_m: float) -> tuple[str, ...]:
+def _warnings(
+    plan: PointToPointPlan, max_snap_distance_m: float, budget_minutes: int | None
+) -> tuple[str, ...]:
     """Anything about this route the rider should know before setting off."""
     notes: list[str] = []
     for label, snap in (("start", plan.start_snap), ("finish", plan.end_snap)):
@@ -73,6 +76,15 @@ def _warnings(plan: PointToPointPlan, max_snap_distance_m: float) -> tuple[str, 
             notes.append(f"The {label} was moved {snap.distance_m:.0f} m to reach a trail.")
     if plan.route.stats.dismount_m > 0:
         notes.append(f"{plan.route.stats.dismount_m:.0f} m of this route must be walked.")
+
+    # A budget that cannot be met is worth saying out loud. The rider gets the
+    # route they asked for either way — the destination is not negotiable — but
+    # being told it runs long beats discovering it at dusk.
+    if budget_minutes is not None and plan.within_budget is False:
+        notes.append(
+            f"The best way there takes about {plan.route.stats.moving_time_min:.0f} min, "
+            f"longer than the {budget_minutes} you allowed."
+        )
     return tuple(notes)
 
 
@@ -105,6 +117,7 @@ def plan_route(
             rider=rider,
             coverage=graph.bbox,
             deadline=deadline,
+            budget_s=request.budget_s,
         )
 
     route_id = new_route_id()
@@ -124,11 +137,12 @@ def plan_route(
                     graph.store,
                     plan,
                     route_id,
-                    _warnings(plan, settings.max_snap_distance_m),
+                    _warnings(plan, settings.max_snap_distance_m, request.budget_minutes),
                 ),
             )
         ),
         profile=profile.id,
         artifact=graph.artifact,
         settled=plan.settled,
+        detour=round(plan.detour, 2),
     )

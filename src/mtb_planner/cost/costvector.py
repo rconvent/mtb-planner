@@ -27,7 +27,7 @@ moment a penalty can be negative.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 import numpy.typing as npt
@@ -45,6 +45,22 @@ TECH_CEILING_MARGIN = 1.0
 #: Grade at which the climb and descent features saturate.
 _CLIMB_REFERENCE = 0.08
 _DESCENT_REFERENCE = 0.10
+
+
+def cost_of(
+    time_s: npt.NDArray[np.float64],
+    preference_: npt.NDArray[np.float64],
+    detour: float,
+) -> npt.NDArray[np.float64]:
+    """`cost = t · (1 + λ · (1 − p_norm))`, the one place the formula lives.
+
+    Written once because two callers need it: `materialise`, and the re-scaling
+    that spends a point-to-point time budget by raising λ. A second copy would
+    be free to drift, and a search whose cost no longer matches the invariant in
+    this module's docstring is a bug nothing would catch.
+    """
+    normalised = (preference_ + 1.0) / 2.0
+    return time_s * (1.0 + detour * (1.0 - normalised))
 
 
 @dataclass(frozen=True)
@@ -81,6 +97,18 @@ class ArcCosts:
             return 0.0
         return float(np.min(self.time_s[moving] / self.distance_m[moving]))
 
+    def with_detour(self, detour: float) -> ArcCosts:
+        """The same arcs, re-costed at a different willingness to detour.
+
+        λ is the only part of a profile that touches nothing but the final
+        multiplication: time is physics, preference is the weighted features,
+        and neither moves when λ does. So trading time for better ground is a
+        vector op over an already-materialised cost, not a second pass over the
+        graph — roughly 15 ms against 500 ms, which is what makes searching
+        several λ within one request affordable.
+        """
+        return replace(self, cost=cost_of(self.time_s, self.preference, detour))
+
 
 def _feature_matrix(
     features: EdgeFeatures, elevation_grade: npt.NDArray[np.float64], profile: RideProfile
@@ -88,18 +116,25 @@ def _feature_matrix(
     """Assemble the normalised features a profile weights, one column each."""
     columns: dict[str, npt.NDArray[np.float64]] = {}
 
+    paved = np.isin(features.surface_class, [int(s) for s in PAVED_SURFACES])
+    columns["paved"] = paved.astype(np.float64)
+    columns["unpaved"] = 1.0 - columns["paved"]
+
     # Technicality is a band match, not "more is better": an XC rider wants an
     # S1 and is no happier on an S4 than on a towpath.
+    #
+    # Gated on unpaved, because a sealed road scores tech 0 and that sits close
+    # enough to a low target for the band to pay it a bonus — under the XC
+    # profile the raw band gave tarmac +0.71 against a paved weight of -0.6,
+    # which made a road the preferred way to ride a mountain bike. Difficulty is
+    # a property of trail; a smooth road is not a mild version of one.
     offset = features.tech.astype(np.float64) - profile.tech_target
-    columns["tech"] = np.exp(-(offset**2) / (2.0 * profile.tech_sigma**2))
+    band = np.exp(-(offset**2) / (2.0 * profile.tech_sigma**2))
+    columns["tech"] = band * columns["unpaved"]
 
     columns["singletrack"] = features.singletrack.astype(np.float64)
     columns["signed_mtb"] = np.clip(features.n_mtb_routes.astype(np.float64) / 3.0, 0.0, 1.0)
     columns["flow"] = features.flow.astype(np.float64)
-
-    paved = np.isin(features.surface_class, [int(s) for s in PAVED_SURFACES])
-    columns["paved"] = paved.astype(np.float64)
-    columns["unpaved"] = 1.0 - columns["paved"]
     columns["fireroad"] = (features.way_class == int(WayClass.FIREROAD)).astype(np.float64)
     columns["traffic"] = features.traffic.astype(np.float64)
 
@@ -201,8 +236,7 @@ def materialise(
     pref = np.where(is_forward, forward_p[edge_of_arc], backward_p[edge_of_arc])
     distance = lengths[edge_of_arc]
 
-    normalised = (pref + 1.0) / 2.0
-    cost = time_s * (1.0 + profile.detour * (1.0 - normalised))
+    cost = cost_of(time_s, pref, profile.detour)
 
     # Anything beyond the rider's declared ceiling is removed, not penalised.
     too_hard = tech_full[edge_of_arc] > profile.tech_max + TECH_CEILING_MARGIN

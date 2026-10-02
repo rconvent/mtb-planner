@@ -76,11 +76,21 @@ export async function planLoop(state, signal) {
   );
 }
 
-/** Plan a route between two points. */
+/** Plan a route between two points.
+ *
+ * The budget travels with a point-to-point request too, where it means slack
+ * rather than a target: the route goes where it was asked to go, and time left
+ * over after the quickest way there is spent on better ground instead.
+ */
 export async function planPointToPoint(state, signal) {
   return post(
     "/api/routes/point-to-point",
-    { start: state.start, end: state.end, profile: state.profile },
+    {
+      start: state.start,
+      end: state.end,
+      profile: state.profile,
+      budget_minutes: state.minutes,
+    },
     signal
   );
 }
