@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+uv run mtb fetch osm europe/belgium
+uv run mtb fetch dem --bbox 2.5,49.4,6.5,51.6
+uv run mtb build --pbf data/osm/belgium-latest.osm.pbf --artifact be-v1
+uv run mtb inspect data/graph/be-v1
+uv run mtb serve --artifact be-v1
+
