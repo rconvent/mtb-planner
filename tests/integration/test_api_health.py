@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from mtb_planner import __version__
+from planner_core import __version__
 
 pytestmark = pytest.mark.integration
 

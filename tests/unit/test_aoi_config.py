@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from mtb_planner.config.aoi import DEFAULT_CONFIG_PATH, AoiConfig, load_aoi_config
-from mtb_planner.core.errors import BuildError
+from planner_core.config.aoi import DEFAULT_CONFIG_PATH, AoiConfig, load_aoi_config
+from planner_core.core.errors import BuildError
 
 pytestmark = pytest.mark.unit
 

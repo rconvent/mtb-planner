@@ -13,7 +13,7 @@ import gpxpy
 import pytest
 from typer.testing import CliRunner
 
-from mtb_planner.cli.main import app
+from mtb_planner.cli import app
 from tests.fixtures.networks import GRID_NW, GRID_SE, single_track
 
 pytestmark = pytest.mark.integration
@@ -152,7 +152,7 @@ def test_inspect_json_output_is_machine_readable(ardennes_pbf: Path):
     assert report["total_ways"] == 11
     assert report["route_relations"]["mtb"] == 1
     assert report["route_relations"]["bicycle"] == 1
-    assert 0.0 <= report["mtb_scale_coverage"] <= 1.0
+    assert 0.0 <= report["surveyed_coverage"] <= 1.0
 
 
 def test_inspect_reports_a_missing_file_rather_than_crashing(tmp_path: Path):

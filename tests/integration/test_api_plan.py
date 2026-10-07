@@ -16,10 +16,10 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from mtb_planner.api.concurrency import PlanSlots
-from mtb_planner.api.deps import plan_slots, route_cache
-from mtb_planner.config.settings import get_settings
-from mtb_planner.cost.profiles import get_profile
+from planner_core.api.concurrency import PlanSlots
+from planner_core.api.deps import plan_slots, route_cache
+from planner_core.config.settings import get_settings
+from planner_core.cost.profiles import get_profile
 from tests.fixtures.networks import FAR_AWAY, GRID_NW, GRID_SE, LATTICE_NE, LATTICE_SW
 
 pytestmark = pytest.mark.integration
@@ -87,7 +87,7 @@ def test_the_controls_are_declared_by_the_server(routing_client: TestClient):
     # hard-coding sliders that drift out of step with it.
     data = routing_client.get("/api/profiles").json()["data"]
 
-    assert {s["id"] for s in data["sliders"]} == {"tech_target", "detour", "power_w"}
+    assert {s["id"] for s in data["sliders"]} == {"tech_target", "detour", "effort"}
     for slider in data["sliders"]:
         assert slider["min"] < slider["max"]
         assert slider["step"] > 0
@@ -150,7 +150,7 @@ def test_the_response_says_which_profile_and_artifact_answered(routing_client: T
 
 
 def test_slider_overrides_are_accepted(routing_client: TestClient):
-    response = plan(routing_client, profile="tech", tech_target=1.5, detour=0.5, power_w=250.0)
+    response = plan(routing_client, profile="tech", tech_target=1.5, detour=0.5, effort=250.0)
 
     assert response.status_code == 200
 
@@ -239,7 +239,7 @@ def test_a_pushing_section_is_called_out_to_the_rider(routing_client: TestClient
     # includes them must say so rather than quietly counting it as riding.
     route = plan(routing_client).json()["data"]["routes"][0]
 
-    if route["stats"]["dismount_m"] > 0:
+    if route["stats"]["walk_m"] > 0:
         assert any("walked" in warning for warning in route["warnings"])
 
 
@@ -423,7 +423,7 @@ def test_a_request_that_outruns_the_configured_timeout_is_abandoned_honestly(
     # ends — otherwise the deepening loop simply succeeds on the second try,
     # which is exactly what it is supposed to do.
     monkeypatch.setenv("MTB_ROUTE_TIMEOUT_S", "0.000000001")
-    monkeypatch.setattr("mtb_planner.routing.router.INITIAL_SETTLE_CEILING", 1)
+    monkeypatch.setattr("planner_core.routing.router.INITIAL_SETTLE_CEILING", 1)
     get_settings.cache_clear()
 
     response = plan(routing_client)

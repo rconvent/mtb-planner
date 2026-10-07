@@ -16,9 +16,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mtb_planner.graph.builder import build_graph
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.ingest.pbf_reader import IngestResult, read_extracts
+from planner_core.graph.builder import build_graph
+from planner_core.graph.store import GraphStore
+from planner_core.ingest.pbf_reader import IngestResult, read_extracts
 
 pytestmark = pytest.mark.unit
 

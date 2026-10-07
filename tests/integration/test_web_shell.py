@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from mtb_planner.api.routes.pages import (
+from planner_core.api.routes.pages import (
     STATIC_ROOT,
     content_security_policy,
     vendor_manifest,
@@ -225,8 +225,8 @@ def test_the_basemap_is_a_setting_not_a_dependency(monkeypatch):
     valley you are looking at, so it is a choice with an off switch rather than
     something wired in.
     """
-    from mtb_planner.api.routes.style import build_style
-    from mtb_planner.config.settings import get_settings
+    from planner_core.api.routes.style import build_style
+    from planner_core.config.settings import get_settings
 
     monkeypatch.setenv("MTB_BASEMAP_URL", "")
     get_settings.cache_clear()
@@ -237,8 +237,8 @@ def test_the_basemap_is_a_setting_not_a_dependency(monkeypatch):
 
 
 def test_a_configured_basemap_is_injected_under_everything(monkeypatch):
-    from mtb_planner.api.routes.style import build_style
-    from mtb_planner.config.settings import get_settings
+    from planner_core.api.routes.style import build_style
+    from planner_core.config.settings import get_settings
 
     monkeypatch.setenv("MTB_BASEMAP_URL", "https://example.test/{z}/{x}/{y}.png")
     get_settings.cache_clear()
@@ -252,8 +252,8 @@ def test_a_configured_basemap_is_injected_under_everything(monkeypatch):
 def test_the_basemap_is_credited(monkeypatch):
     # Attribution is a licence condition for OSM data and a usage condition for
     # most tile servers, so it travels on the source itself.
-    from mtb_planner.api.routes.style import build_style
-    from mtb_planner.config.settings import get_settings
+    from planner_core.api.routes.style import build_style
+    from planner_core.config.settings import get_settings
 
     get_settings.cache_clear()
     style = build_style(get_settings())
@@ -267,7 +267,7 @@ def test_the_basemap_is_pushed_back_behind_the_route():
     A full-strength raster under a route coloured green-to-red-violet turns the
     plate into noise, and the ramp stops reading as meaning.
     """
-    from mtb_planner.api.routes.style import BASEMAP_PAINT
+    from planner_core.api.routes.style import BASEMAP_PAINT
 
     assert BASEMAP_PAINT["raster-opacity"] < 1.0
     assert BASEMAP_PAINT["raster-saturation"] < 0.0

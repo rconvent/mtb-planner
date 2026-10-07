@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from mtb_planner.ingest.catalog import (
+from planner_core.ingest.catalog import (
     DEFAULT_AOI_REGIONS,
     GEOFABRIK_BASE,
     SMOKE_TEST_REGION,
@@ -90,7 +90,7 @@ def test_an_empty_extract_is_not_treated_as_a_download():
     empty one left behind by an earlier failure. It was then logged as "already
     present and verified", which is a claim that no verification supports.
     """
-    from mtb_planner.ingest.download import _MIN_PLAUSIBLE_BYTES
+    from planner_core.ingest.download import _MIN_PLAUSIBLE_BYTES
 
     # A pbf carries a header blob before any data, so nothing real is this small.
     assert _MIN_PLAUSIBLE_BYTES > 0
@@ -103,7 +103,7 @@ def test_a_present_file_without_a_checksum_is_not_called_verified(tmp_path, capl
 
     import httpx
 
-    from mtb_planner.ingest import download as module
+    from planner_core.ingest import download as module
 
     target = tmp_path / "luxembourg-latest.osm.pbf"
     target.write_bytes(
@@ -114,7 +114,7 @@ def test_a_present_file_without_a_checksum_is_not_called_verified(tmp_path, capl
     original = module._published_md5
     module._published_md5 = lambda client, region: None  # no sidecar published
     try:
-        with caplog.at_level(logging.INFO, logger="mtb_planner.ingest.download"):
+        with caplog.at_level(logging.INFO, logger="planner_core.ingest.download"):
             result = module.download_extract(region, tmp_path)
     except httpx.HTTPError:  # pragma: no cover - only if the network is reachable
         pytest.skip("network reachable; this test only covers the local branch")
@@ -136,7 +136,7 @@ def test_an_html_error_page_is_not_accepted_as_an_extract(tmp_path):
     verified" on every later run, and a full area-of-interest build would have
     quietly contained no Belgium and no Netherlands.
     """
-    from mtb_planner.ingest.download import _looks_like_pbf
+    from planner_core.ingest.download import _looks_like_pbf
 
     page = tmp_path / "benelux-latest.osm.pbf"
     page.write_bytes(
@@ -147,7 +147,7 @@ def test_an_html_error_page_is_not_accepted_as_an_extract(tmp_path):
 
 
 def test_a_real_extract_is_recognised(tmp_path):
-    from mtb_planner.ingest.download import _looks_like_pbf
+    from planner_core.ingest.download import _looks_like_pbf
 
     # The type string every PBF carries in its first blob header.
     extract = tmp_path / "real-latest.osm.pbf"

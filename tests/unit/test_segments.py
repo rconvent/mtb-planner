@@ -15,13 +15,13 @@ import itertools
 import numpy as np
 import pytest
 
-from mtb_planner.cost.costvector import materialise
-from mtb_planner.cost.profiles import RideProfile
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.kernels import warm_up
-from mtb_planner.routing.result import build_route
-from mtb_planner.routing.router import Router
-from mtb_planner.routing.segments import elevation_profile, route_segments
+from planner_core.cost.costvector import materialise
+from planner_core.cost.profiles import RideProfile
+from planner_core.graph.store import GraphStore
+from planner_core.routing.kernels import warm_up
+from planner_core.routing.result import build_route
+from planner_core.routing.router import Router
+from planner_core.routing.segments import elevation_profile, route_segments
 
 pytestmark = pytest.mark.unit
 

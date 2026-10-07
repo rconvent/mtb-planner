@@ -11,10 +11,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.core.geo import BBox
-from mtb_planner.features.enums import WayClass
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.graph.viewport import (
+from planner_core.core.geo import BBox
+from planner_core.features.enums import WayClass
+from planner_core.graph.store import GraphStore
+from planner_core.graph.viewport import (
     DEFAULT_LIMIT,
     MIN_PIXELS,
     as_geojson,

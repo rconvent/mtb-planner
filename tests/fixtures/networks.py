@@ -273,3 +273,73 @@ def border_pair(directory: Path) -> tuple[Path, Path]:
         ],
     )
     return west, east
+
+
+#: Corners of the footpath grid, for routing in the trail tests.
+FOOT_SW = (50.300, 5.300)
+FOOT_NE = (50.302, 5.302)
+
+
+def footpaths(directory: Path, stem: str = "footpaths") -> Path:
+    """A grid where a runner and a rider must disagree.
+
+    Laid out like `ardennes_like` — 3x3, 0.001° apart — but at lat 50.30 so it
+    can never be confused with it, and with the cases that split the sports:
+
+      * way 510: a footway with `bicycle=no`. A runner's; never a rider's.
+      * way 511: a cycleway with `foot=no`. A rider's; never a runner's.
+      * way 512: a one-way mountain-bike descent. One-way on a bike, both ways
+        on foot.
+      * way 513: steps. Pushed on a bike, run on foot.
+      * way 514: a `demanding_alpine_hiking` scramble. Walked on foot.
+      * way 515: a `sac_scale=mountain_hiking` path. Surveyed for a runner.
+      * relation 950: a waymarked hiking route over 500 and 515.
+    """
+    lat0, lon0, step = 50.300, 5.300, 0.001
+    grid = [
+        FixtureNode(2000 + row * 3 + column, lat0 + step * row, lon0 + step * column)
+        for row in range(3)
+        for column in range(3)
+    ]
+    extra = [
+        FixtureNode(2010, lat0 + 0.0005, lon0 - 0.0008),
+        FixtureNode(2011, lat0 + 0.0025, lon0 + 0.0010),
+        FixtureNode(2012, lat0 + 0.0015, lon0 + 0.0028),
+    ]
+
+    track = {"highway": "track", "surface": "gravel", "tracktype": "grade3"}
+    ways = [
+        FixtureWay(500, [2000, 2001, 2002], track),
+        FixtureWay(501, [2003, 2004, 2005], track),
+        FixtureWay(502, [2006, 2007, 2008], track),
+        FixtureWay(503, [2000, 2003, 2006], track),
+        FixtureWay(504, [2002, 2005, 2008], track),
+        FixtureWay(510, [2001, 2004], {"highway": "footway", "bicycle": "no", "surface": "ground"}),
+        FixtureWay(511, [2004, 2007], {"highway": "cycleway", "foot": "no", "surface": "asphalt"}),
+        FixtureWay(
+            512,
+            [2008, 2012, 2005],
+            {"highway": "path", "oneway": "yes", "mtb:scale": "2", "surface": "dirt"},
+        ),
+        FixtureWay(513, [2000, 2010], {"highway": "steps", "step_count": "40"}),
+        FixtureWay(
+            514,
+            [2006, 2011],
+            {"highway": "path", "sac_scale": "demanding_alpine_hiking", "surface": "rock"},
+        ),
+        FixtureWay(
+            515,
+            [2003, 2010],
+            {"highway": "path", "sac_scale": "mountain_hiking", "surface": "ground"},
+        ),
+    ]
+    relations = [
+        FixtureRelation(
+            950,
+            [("way", 500, ""), ("way", 515, "")],
+            {"type": "route", "route": "hiking", "name": "GR 5", "network": "nwn"},
+        ),
+    ]
+    return write_fixture_pbf(
+        directory, stem, nodes=[*grid, *extra], ways=ways, relations=relations
+    )

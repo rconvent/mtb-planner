@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import pytest
 
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.ingest.way_filter import BikeAccess
-from mtb_planner.routing.loop import LoopCandidate, LoopRequest
-from mtb_planner.routing.result import Route
+from planner_core.graph.store import GraphStore
+from planner_core.routing.loop import LoopCandidate, LoopRequest
+from planner_core.routing.result import Route
+from planner_core.sport import Access
 
 
 def _assert_arcs_are_connected(store: GraphStore, route: Route) -> None:
@@ -39,7 +39,7 @@ def _assert_no_forbidden_ways(store: GraphStore, route: Route) -> None:
     for arc in route.arcs:
         edge = int(store.arc_edge[arc])
         access = int(store.edge_access[edge])
-        assert access != BikeAccess.NO, (
+        assert access != Access.NO, (
             f"route uses edge {edge} (OSM way {int(store.edge_way_id[edge])}), "
             "which bicycles are not permitted on"
         )

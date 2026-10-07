@@ -16,10 +16,10 @@ import httpx
 import pytest
 from typer.testing import CliRunner
 
-from mtb_planner.cli import fetch as fetch_cmd
-from mtb_planner.core.errors import DemTileUnpublishedError, ExtractDownloadError
-from mtb_planner.elevation.dem_catalog import DemTile
-from mtb_planner.elevation.dem_unpublished import load_unpublished, registry_path
+from planner_core.cli import fetch as fetch_cmd
+from planner_core.core.errors import DemTileUnpublishedError, ExtractDownloadError
+from planner_core.elevation.dem_catalog import DemTile
+from planner_core.elevation.dem_unpublished import load_unpublished, registry_path
 
 pytestmark = pytest.mark.unit
 

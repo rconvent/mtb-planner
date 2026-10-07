@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 import typer
 
-from mtb_planner.cli.parsing import parse_bbox, parse_latlon
+from planner_core.cli.parsing import parse_bbox, parse_latlon
 
 pytestmark = pytest.mark.unit
 

@@ -18,7 +18,7 @@ import {
   segmentLengths,
   surveyedFraction,
   totalLength,
-} from "../../src/mtb_planner/web/static/js/route.js";
+} from "../../src/planner_core/web/static/js/route.js";
 
 // Four points due east, split into three segments of roughly equal length.
 // A lon step of 0.001 at this latitude is about 71 m, but the segment lengths

@@ -20,19 +20,19 @@ import itertools
 import numpy as np
 import pytest
 
-from mtb_planner.core.errors import (
+from mtb_planner.speed import Rider
+from planner_core.core.errors import (
     NoRouteFoundError,
     PointOffNetworkError,
     PointOutsideCoverageError,
 )
-from mtb_planner.core.geo import LatLon
-from mtb_planner.cost.profiles import RideProfile, get_profile
-from mtb_planner.cost.speed import Rider
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.budget import Deadline
-from mtb_planner.routing.kernels import warm_up
-from mtb_planner.routing.loop import (
+from planner_core.core.geo import LatLon
+from planner_core.cost.profiles import RideProfile, get_profile
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.routing.budget import Deadline
+from planner_core.routing.kernels import warm_up
+from planner_core.routing.loop import (
     HEADING_SECTORS,
     LoopRequest,
     plan_loops,
@@ -61,7 +61,7 @@ def a_request(profile: RideProfile, **overrides: object) -> LoopRequest:
         "start": LatLon(*GRID_NW),
         "budget_s": WORKABLE_S,
         "profile": profile,
-        "rider": Rider(),
+        "athlete": Rider(),
         "variants": 3,
     }
     base.update(overrides)

@@ -14,14 +14,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mtb_planner import ARTIFACT_SCHEMA_VERSION, COST_MODEL_VERSION
-from mtb_planner.core.errors import ArtifactNotFoundError, IncompatibleArtifactError
-from mtb_planner.core.geo import LatLon
-from mtb_planner.graph.manifest import MANIFEST_FILENAME, read_manifest
-from mtb_planner.graph.serialize import graph_counts, load_artifact, save_artifact
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.point_to_point import plan_point_to_point
+from mtb_planner import COST_MODEL_VERSION
+from planner_core import ARTIFACT_SCHEMA_VERSION
+from planner_core.core.errors import ArtifactNotFoundError, IncompatibleArtifactError
+from planner_core.core.geo import LatLon
+from planner_core.graph.manifest import MANIFEST_FILENAME, read_manifest
+from planner_core.graph.serialize import graph_counts, load_artifact, save_artifact
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.routing.point_to_point import plan_point_to_point
 from tests.fixtures.networks import GRID_NW, GRID_SE
 
 pytestmark = pytest.mark.unit
@@ -217,7 +218,7 @@ def _build(directory: Path, name: str) -> Path:
 
 
 def test_a_built_artifact_is_used_as_asked(tmp_path):
-    from mtb_planner.graph.manifest import resolve_artifact_dir
+    from planner_core.graph.manifest import resolve_artifact_dir
 
     wanted = _build(tmp_path, "lux-v1")
 
@@ -232,7 +233,7 @@ def test_the_only_artifact_present_is_served_under_another_name(tmp_path):
     profiles and answer every single plan with 503 — four separate sessions ended
     that way before this rule existed.
     """
-    from mtb_planner.graph.manifest import resolve_artifact_dir
+    from planner_core.graph.manifest import resolve_artifact_dir
 
     built = _build(tmp_path, "lux-v1")
 
@@ -246,7 +247,7 @@ def test_two_artifacts_are_never_guessed_between(tmp_path):
     graph and never notices. With any ambiguity the configured path comes back
     untouched, so the caller fails and names them.
     """
-    from mtb_planner.graph.manifest import resolve_artifact_dir
+    from planner_core.graph.manifest import resolve_artifact_dir
 
     _build(tmp_path, "lux-v1")
     _build(tmp_path, "aoi-v2")
@@ -256,7 +257,7 @@ def test_two_artifacts_are_never_guessed_between(tmp_path):
 
 
 def test_nothing_built_resolves_to_what_was_asked_for(tmp_path):
-    from mtb_planner.graph.manifest import resolve_artifact_dir
+    from planner_core.graph.manifest import resolve_artifact_dir
 
     wanted = tmp_path / "aoi-v1"
 
@@ -265,7 +266,7 @@ def test_nothing_built_resolves_to_what_was_asked_for(tmp_path):
 
 def test_a_directory_without_a_manifest_is_not_an_artifact(tmp_path):
     # A half-written build, or somebody`s scratch folder.
-    from mtb_planner.graph.manifest import resolve_artifact_dir
+    from planner_core.graph.manifest import resolve_artifact_dir
 
     (tmp_path / "not-an-artifact").mkdir()
     wanted = tmp_path / "aoi-v1"

@@ -24,6 +24,7 @@ built, what is measured, and what is not done.
 | 9 | Frontend: MapLibre, control rail, elevation profile | Done |
 | 9b | Trail overlay, A-to-B UI, keyboard chart, WCAG AA | Done |
 | 10 | Polish: hillshade from DEM, vector tiles, Lighthouse | Not started |
+| 11 | Trail running: shared engine, `trail` sport | Done, verified on fixtures; never built on real data |
 
 **Nothing is committed.** `git init` has run; the tree is untracked. Whether
 `.claude/` belongs in git is undecided.
@@ -170,6 +171,67 @@ as the survey plate it was meant to be. What is still missing is terrain: no
 hillshade and no contours, so the map is flat in a tool whose whole subject is
 climbing and descending.
 
+## Two sports, one engine
+
+The bike-only `mtb_planner` package was split in two: `planner_core` holds
+everything that does not care what is being planned for, and each sport is a
+small package that hands the engine one `planner_core.sport.Sport`. `mtb_planner`
+is the bike, unchanged in behaviour; `trail` is new.
+
+**What a sport supplies.** An access function (`Access.NO / WALK / YES`) and a
+direction function; a difficulty function onto the shared 0–6 ordinal; which
+route relations it reads and which count as signed; an athlete whose
+`speed_table()` is the whole time model; an effort control; a profiles file; a
+settings class with its own env prefix; and the words the UI and CLI use.
+Everything else — ingest passes, graph build, propagation, elevation, cost
+vector, kernels, loops, slack, API, interface — is shared.
+
+**One sport per process.** The entry point (`mtb`, `trail`, or
+`create_app(sport)`) calls `activate()`, and code that needs the sport reads
+`active_sport()`. Engine functions a test may want under a different sport —
+`read_extracts`, `build_graph`, `compute_features`, the manifest checks — also
+take it as an optional argument. The test suite activates the bike at import and
+puts it back after every test.
+
+**Verified that the bike did not move.** `materialise` was run on `be-v1` for all
+four bike profiles with the pre-split code (`main` at `3593903`) and with the
+split code: cost, time, preference and allowed arrays hash identically across
+2,065,825 edges. `be-v1` loads without a rebuild — the manifest's new `sport`
+field defaults to `mtb`, and the renamed `n_signed_routes` column is still read
+from `feat_n_mtb_routes.npy`.
+
+**The runner's model**, in `src/trail/`:
+
+- *Access* follows `foot=*`. `bicycle=no` is irrelevant; `foot=no`,
+  `foot=use_sidepath` and private-without-`foot` close a way; `smoothness=
+  impassable` does not. Steps are `YES`. `demanding_alpine_hiking` and above
+  are `WALK`, timed at a 0.8 m/s scramble. Only `oneway:foot` sets a direction.
+- *Difficulty* reads `sac_scale` as the survey (hiking 1 … difficult_alpine 6),
+  `mtb:scale` as a proxy compressed at the top (S4 → 3.2), and otherwise a
+  composite where trail visibility weighs more and width and smoothness less
+  than on the bike. Uphill is the downhill figure minus 0.3. Flow is zero.
+- *Speed* is Minetti et al. (2002), `C(i)` in J/kg/m, divided into a metabolic
+  power calibrated from the runner's flat pace. Surface multiplies the cost
+  (sand ×1.35), each technicality grade adds 12%, and descents are capped by
+  technicality and surface as on the bike (5.0 m/s at T0 down to 0.8 m/s at T6).
+  At the default 6:00/km: 10.0 km/h on flat tarmac, 8.3 on a T1 dirt path,
+  5.0 at +10%, 2.4 at +30%.
+- *Signed routes* are `hiking`, `foot`, `running`, `fitness_trail`.
+- *Profiles* `easy · trail · technical · vertical`, λ 0.9 / 1.4 / 2.0 / 2.4 —
+  lower than the bike's because firm trail is only about 1.2× slower than
+  tarmac on foot, against 1.5× on a bike.
+
+**Separate graphs, shared downloads.** `TRAIL_DATA_DIR` defaults to the same
+`data/`, so extracts and DEM tiles are fetched once. Built graphs go to
+`data/graph-trail/` (`TRAIL_GRAPH_SUBDIR`), because the AOI config names one
+artifact and a trail build would otherwise overwrite the bike's. The trail
+server defaults to port 8001.
+
+**Verified live.** `mtb serve` on `be-v1` and `trail serve` on a fixture
+artifact built with `trail build` ran side by side: the bike planned La Roche →
+Houffalize under `flow` with a three-hour budget (26.3 km, 168 min), the runner
+planned 30-minute loops, and each page rendered its own wording and grade prefix.
+
 ## Why A-to-B came back on the road
 
 Reported from the Belgian build: point-to-point routes looked like a road
@@ -284,7 +346,7 @@ other client would use. No bundler, no npm, no framework — seven ES modules
 totalling about 1,100 lines, plus vendored MapLibre.
 
 ```
-src/mtb_planner/web/
+src/planner_core/web/
   templates/app.html        semantic shell; the script fills values, not markup
   static/css/tokens.css     the ONLY file that names a colour
   static/css/app.css        layout; asymmetric rail and dock
@@ -427,6 +489,15 @@ is that documentation and configuration need running, not reading.
 
 ## Decisions that must not be quietly undone
 
+**An artifact belongs to one sport.** The manifest records `sport`, and loading
+under another refuses with "built for trail, not mtb". A runner's graph holds
+footpaths a rider may not legally use, and a rider's holds bike-only cycleways;
+serving either to the other is wrong in a way no route looks wrong.
+
+**Sport-specific logic stays in the sport package.** If `planner_core` ever
+needs an `if sport.id == ...`, the `Sport` interface is missing a field. Add the
+field; do not branch.
+
 **The separation invariant.** `cost = time × (1 + λ·(1 − preference))`, with
 time, distance and preference kept independent. Three properties depend on it:
 the A* heuristic stays admissible, a budget-limited search has a provable
@@ -463,9 +534,11 @@ dishonest. Keep it visible in any UI.
 generator must use `Router.reachable_within` rather than growing its own
 search with its own subtly different U-turn rule.
 
-**Version gates.** `ARTIFACT_SCHEMA_VERSION` and `COST_MODEL_VERSION` in
-`mtb_planner/__init__.py` are both at 3. Bump them whenever the artifact layout
-or the cost interpretation changes; a stale artifact then refuses to load
+**Version gates.** `ARTIFACT_SCHEMA_VERSION` (3) lives in
+`planner_core/__init__.py`; each sport has its own `COST_MODEL_VERSION`, in
+`mtb_planner/__init__.py` (3) and `trail/__init__.py` (1). Bump the schema when
+the artifact layout changes and a sport's cost model when its interpretation
+changes; a stale artifact then refuses to load
 instead of silently producing plausible-looking wrong routes.
 
 **The timeout is enforced outside the kernel, by deepening.** Numba's nopython
@@ -620,11 +693,26 @@ From real OSM data (Luxembourg, 47 MB extract → 164,650 nodes / 204,175 edges)
 
 ## Known gaps and risks
 
+- **The trail model has never met real data.** No trail artifact has been built
+  from a real extract, and none of its constants — Minetti calibration aside —
+  is measured. The λ values were reasoned from the speed model, not measured on
+  a graph the way the bike's were. First job: `trail build` Belgium and repeat
+  the cost-per-metre table in "Why A-to-B came back on the road" for runners.
+- **Belgian foot access on cycleways is a guess.** `highway=cycleway` is open on
+  foot unless tagged `foot=no`, because RAVeL greenways are walked as much as
+  ridden. Dutch and Flemish fietspaden are often closed to walkers where a
+  footway exists, and OSM rarely says so.
+- **The browser tests have not run against the trail UI.** The e2e suite is
+  bike-only and needs `playwright install chromium`; the trail page is checked
+  over HTTP only.
+- **Effort is not in the interface.** The API takes `effort` (watts or min/km)
+  and lists it as a slider, but the rail does not render it for either sport.
+
 - **Signed-route seeding is not built.** The plan's Phase 8 step 1 — seed
   candidates from closed `route=mtb` relations near the start — is the one part
   of the pipeline that is missing, and the plan rates it the best
   quality-per-line in the project. **It is blocked on the artifact:** edges carry
-  only `n_mtb_routes` (a count) and `route_flags` (a bit), so relation *identity*
+  only `n_signed_routes` (a count) and `route_flags` (a bit), so relation *identity*
   is gone by the time the graph is built and a specific signed loop cannot be
   reconstructed. Doing it needs a per-edge relation id plus a relation table,
   which is a `ARTIFACT_SCHEMA_VERSION` bump and a rebuild. Partial consolation:

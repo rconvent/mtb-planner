@@ -25,10 +25,11 @@ from datetime import UTC, datetime
 import pytest
 import uvicorn
 
-from mtb_planner import ARTIFACT_SCHEMA_VERSION, COST_MODEL_VERSION
-from mtb_planner.api.app import create_app
-from mtb_planner.routing.kernels import warm_up
-from mtb_planner.services.graph_registry import LoadedGraph, get_registry
+from mtb_planner import COST_MODEL_VERSION
+from planner_core import ARTIFACT_SCHEMA_VERSION
+from planner_core.api.app import create_app
+from planner_core.routing.kernels import warm_up
+from planner_core.services.graph_registry import LoadedGraph, get_registry
 
 pytestmark = [pytest.mark.e2e, pytest.mark.integration]
 

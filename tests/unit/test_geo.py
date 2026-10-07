@@ -11,7 +11,7 @@ import math
 import numpy as np
 import pytest
 
-from mtb_planner.core.geo import (
+from planner_core.core.geo import (
     BBox,
     LatLon,
     bearing_deg,
@@ -20,7 +20,7 @@ from mtb_planner.core.geo import (
     heading_sector,
     polyline_length_m,
 )
-from mtb_planner.core.units import EARTH_RADIUS_M
+from planner_core.core.units import EARTH_RADIUS_M
 
 pytestmark = pytest.mark.unit
 

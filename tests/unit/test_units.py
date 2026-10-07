@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from mtb_planner.core.units import (
+from planner_core.core.units import (
     DISMOUNT_SPEED_M_S,
     MAX_SPEED_M_S,
     MIN_SPEED_M_S,

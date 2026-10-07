@@ -13,17 +13,16 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from mtb_planner.api.schemas.planning import (
-    MAX_POWER_W,
-    MIN_POWER_W,
+from mtb_planner.sport import MAX_POWER_W, MIN_POWER_W
+from planner_core.api.schemas.planning import (
     PlanRequest,
     ProfileList,
     ProfileSummary,
     geometry_of,
     stats_of,
 )
-from mtb_planner.cost.profiles import FEATURE_NAMES, MAX_DETOUR, RideProfile
-from mtb_planner.routing.result import Route, RouteStats
+from planner_core.cost.profiles import FEATURE_NAMES, MAX_DETOUR, RideProfile
+from planner_core.routing.result import Route, RouteStats
 
 pytestmark = pytest.mark.unit
 
@@ -34,7 +33,7 @@ def a_route(**overrides: float) -> Route:
         "distance_m": 26_432.678,
         "n_edges": 41,
         "n_points": 812,
-        "dismount_m": 118.44,
+        "walk_m": 118.44,
         "ascent_m": 531.44,
         "descent_m": 529.61,
         "moving_time_s": 5_412.9,
@@ -107,7 +106,7 @@ def test_a_route_with_no_time_estimate_reports_no_speed_rather_than_dividing_by_
 
 
 def test_pushing_distance_is_surfaced():
-    assert stats_of(a_route()).dismount_m == 118.4
+    assert stats_of(a_route()).walk_m == 118.4
 
 
 # --------------------------------------------------------------- requests
@@ -118,10 +117,11 @@ def test_a_minimal_request_defaults_to_a_profile_and_no_overrides():
         {"start": {"lat": 50.10, "lon": 5.10}, "end": {"lat": 50.20, "lon": 5.20}}
     )
 
-    assert request.profile == "flow"
+    # Left to the sport, which defaults it when the request is resolved.
+    assert request.profile is None
     assert request.tech_target is None
     assert request.detour is None
-    assert request.power_w is None
+    assert request.effort is None
 
 
 @pytest.mark.parametrize(
@@ -131,8 +131,8 @@ def test_a_minimal_request_defaults_to_a_profile_and_no_overrides():
         ("tech_target", 6.1),
         ("detour", -0.1),
         ("detour", MAX_DETOUR + 0.1),
-        ("power_w", MIN_POWER_W - 1),
-        ("power_w", MAX_POWER_W + 1),
+        ("effort", MIN_POWER_W - 1),
+        ("effort", MAX_POWER_W + 1),
         ("profile", ""),
     ],
 )
@@ -193,6 +193,8 @@ def test_a_summary_omits_the_weight_vector():
 
 def test_the_feature_list_comes_from_the_cost_model_itself(profile: RideProfile):
     # Hard-coding it here is how a slider ends up controlling nothing.
-    listing = ProfileList(profiles=(ProfileSummary.of(profile),), sliders=())
+    listing = ProfileList(
+        profiles=(ProfileSummary.of(profile),), default_profile=profile.id, sliders=()
+    )
 
     assert listing.features == FEATURE_NAMES

@@ -11,11 +11,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.cost.costvector import materialise, max_speed_mps
-from mtb_planner.cost.profiles import RideProfile
-from mtb_planner.cost.speed import Rider
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.ball import (
+from mtb_planner.speed import Rider
+from planner_core.cost.costvector import materialise, max_speed_mps
+from planner_core.cost.profiles import RideProfile
+from planner_core.graph.store import GraphStore
+from planner_core.routing.ball import (
     MIN_RADIUS_M,
     arc_tails,
     ball_around,

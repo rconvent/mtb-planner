@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import pytest
 
-from mtb_planner.core.errors import (
+from planner_core.core.errors import (
     ArtifactError,
     BuildError,
     IncompatibleArtifactError,
-    MtbPlannerError,
     NoRouteFoundError,
+    PlannerError,
     PlanningError,
     PointOffNetworkError,
     PointOutsideCoverageError,
@@ -25,10 +25,10 @@ pytestmark = pytest.mark.unit
 @pytest.mark.parametrize(
     ("subclass", "base"),
     [
-        (BuildError, MtbPlannerError),
-        (ArtifactError, MtbPlannerError),
+        (BuildError, PlannerError),
+        (ArtifactError, PlannerError),
         (IncompatibleArtifactError, ArtifactError),
-        (PlanningError, MtbPlannerError),
+        (PlanningError, PlannerError),
         (PointOffNetworkError, PlanningError),
         (NoRouteFoundError, PlanningError),
     ],

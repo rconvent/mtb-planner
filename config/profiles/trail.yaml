@@ -1,0 +1,93 @@
+# Trail running profiles: named presets over the same weight vector the bike
+# profiles use. Read `mtb.yaml` for what each field means; only the numbers
+# differ.
+#
+# Technicality here is the hiking scale, on the same 0-6 ordinal: 0 is smooth
+# ground, 1 a T1 hiking path, 2 a T2 mountain path, 3 a T3 demanding route
+# where footing matters. Most runners in the Ardennes live between 1 and 2.
+#
+# `flow` is left out on purpose. It scores purpose-built bike trail, which a
+# runner neither seeks nor avoids.
+#
+# `detour` buys back a speed difference before it buys any trail, as on the
+# bike, but the difference is smaller on foot: firm natural ground costs about
+# a fifth more time per metre than tarmac in this model, against half as much
+# again on a bike. The values are lower for that reason, and set so each
+# profile accepts roughly the detour its description promises.
+
+profiles:
+  - id: easy
+    name: Easy
+    description: Runnable paths and firm tracks. Keeps off roads without hunting for roots.
+    tech_target: 0.8
+    tech_sigma: 0.8
+    tech_max: 2.5
+    detour: 0.9
+    weights:
+      tech: 1.0
+      singletrack: 0.5
+      signed: 0.4
+      unpaved: 0.6
+      fireroad: 0.2
+      paved: -0.5
+      traffic: -1.0
+      descent: 0.0
+      climb: -0.3
+      unknown: -0.1
+
+  - id: trail
+    name: Trail
+    description: Proper trail running. Singletrack first, tracks to link it, roads only to cross.
+    tech_target: 1.5
+    tech_sigma: 0.8
+    tech_max: 3.5
+    detour: 1.4
+    weights:
+      tech: 1.5
+      singletrack: 0.9
+      signed: 0.3
+      unpaved: 0.8
+      fireroad: -0.1
+      paved: -0.7
+      traffic: -1.2
+      descent: 0.1
+      climb: 0.0
+      unknown: -0.1
+
+  - id: technical
+    name: Technical
+    description: Rocky, rooty and steep. Worth slowing down for; the footing is the point.
+    tech_target: 2.5
+    tech_sigma: 1.0
+    tech_max: 5.0
+    detour: 2.0
+    weights:
+      tech: 1.8
+      singletrack: 1.0
+      signed: 0.1
+      unpaved: 0.8
+      fireroad: -0.4
+      paved: -0.9
+      traffic: -1.4
+      descent: 0.3
+      climb: 0.2
+      unknown: 0.0
+
+  - id: vertical
+    name: Vertical
+    description: Climbing is the workout. Seeks height gain and the steep way up.
+    tech_target: 2.0
+    tech_sigma: 1.2
+    tech_max: 4.5
+    detour: 2.4
+    weights:
+      tech: 1.0
+      singletrack: 0.6
+      signed: 0.1
+      unpaved: 0.6
+      fireroad: -0.2
+      paved: -0.7
+      traffic: -1.2
+      descent: 0.4
+      climb: 1.2
+      unknown: 0.0

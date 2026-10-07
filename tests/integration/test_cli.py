@@ -11,8 +11,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from mtb_planner import __version__
-from mtb_planner.cli.main import app
+from mtb_planner.cli import app
+from planner_core import __version__
 
 pytestmark = pytest.mark.integration
 
@@ -159,8 +159,8 @@ def test_a_missing_artifact_names_the_ones_that_exist(tmp_path):
     not there. Listing what is beside it turns a dead end into a one-line
     correction, and it is worded once so the CLI and the server agree.
     """
-    from mtb_planner.core.errors import ArtifactNotFoundError
-    from mtb_planner.graph.manifest import read_manifest
+    from planner_core.core.errors import ArtifactNotFoundError
+    from planner_core.graph.manifest import read_manifest
 
     built = tmp_path / "lux-v1"
     built.mkdir()
@@ -175,8 +175,8 @@ def test_a_missing_artifact_names_the_ones_that_exist(tmp_path):
 
 
 def test_a_missing_artifact_with_nothing_built_says_to_build(tmp_path):
-    from mtb_planner.core.errors import ArtifactNotFoundError
-    from mtb_planner.graph.manifest import read_manifest
+    from planner_core.core.errors import ArtifactNotFoundError
+    from planner_core.graph.manifest import read_manifest
 
     with pytest.raises(ArtifactNotFoundError, match="mtb build"):
         read_manifest(tmp_path / "aoi-v1")

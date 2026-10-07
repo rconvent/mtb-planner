@@ -12,9 +12,9 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from mtb_planner.api.app import create_app
-from mtb_planner.api.schemas.common import LatLonModel
-from mtb_planner.core.errors import (
+from planner_core.api.app import create_app
+from planner_core.api.schemas.common import LatLonModel
+from planner_core.core.errors import (
     GraphNotLoadedError,
     IncompatibleArtifactError,
     NoRouteFoundError,

@@ -17,19 +17,20 @@ from pathlib import Path
 
 import pytest
 
-from mtb_planner.config.settings import Settings
+from mtb_planner.settings import MtbSettings as Settings
 
 pytestmark = pytest.mark.unit
 
 EXAMPLE = Path(__file__).resolve().parents[2] / ".env.example"
-PREFIX = "MTB_"
+#: One prefix per sport. Both read the same fields.
+PREFIXES = ("MTB_", "TRAIL_")
 
 
 def documented_keys() -> set[str]:
-    """Every MTB_ setting named in the example file, commented out or not."""
+    """Every sport setting named in the example file, commented out or not."""
     found = set()
     for line in EXAMPLE.read_text(encoding="utf-8").splitlines():
-        match = re.match(r"^\s*#?\s*(MTB_[A-Z0-9_]+)\s*=", line)
+        match = re.match(r"^\s*#?\s*((?:MTB|TRAIL)_[A-Z0-9_]+)\s*=", line)
         if match:
             found.add(match.group(1))
     return found
@@ -37,7 +38,7 @@ def documented_keys() -> set[str]:
 
 def field_keys() -> set[str]:
     """Every setting the application actually reads."""
-    return {PREFIX + name.upper() for name in Settings.model_fields}
+    return {prefix + name.upper() for prefix in PREFIXES for name in Settings.model_fields}
 
 
 # --------------------------------------------------------------- the example

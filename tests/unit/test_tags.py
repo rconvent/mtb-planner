@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from mtb_planner.ingest.tags import (
+from planner_core.ingest.tags import (
     WayTags,
     first_semicolon_value,
     parse_imba_scale,

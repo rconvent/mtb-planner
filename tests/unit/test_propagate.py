@@ -12,16 +12,16 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.features.enums import SurfaceClass, TechConfidence, WayClass
-from mtb_planner.features.model import EdgeFeatures
-from mtb_planner.features.propagate import (
+from planner_core.features.enums import SurfaceClass, TechConfidence, WayClass
+from planner_core.features.model import EdgeFeatures
+from planner_core.features.propagate import (
     GROUP_WEIGHT,
     confidence_coverage,
     propagate_difficulty,
 )
-from mtb_planner.graph.segments import Segment
-from mtb_planner.ingest.tags import WayTags
-from mtb_planner.ingest.way_filter import BikeAccess, Direction
+from planner_core.graph.segments import Segment
+from planner_core.ingest.tags import WayTags
+from planner_core.sport import Access, Direction
 
 pytestmark = pytest.mark.unit
 
@@ -37,7 +37,7 @@ def segment(
         node_ids=np.array([u, v], dtype=np.int64),
         way_id=u * 1000 + v,
         tags=WayTags(highway="path", name=name),
-        access=int(BikeAccess.YES),
+        access=int(Access.YES),
         direction=int(Direction.BOTH),
         routes=routes,
     )
@@ -61,7 +61,7 @@ def features_for(
         traffic=np.zeros(count, dtype=np.float32),
         surface_class=np.full(count, int(surface), dtype=np.uint8),
         way_class=np.full(count, int(way_class), dtype=np.uint8),
-        n_mtb_routes=np.zeros(count, dtype=np.uint8),
+        n_signed_routes=np.zeros(count, dtype=np.uint8),
         route_flags=np.zeros(count, dtype=np.uint8),
     )
 

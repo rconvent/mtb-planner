@@ -11,17 +11,17 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.core.errors import (
+from planner_core.core.errors import (
     NoRouteFoundError,
     PointOffNetworkError,
     PointOutsideCoverageError,
 )
-from mtb_planner.core.geo import LatLon
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.astar import SearchResult, astar
-from mtb_planner.routing.point_to_point import plan_point_to_point
-from mtb_planner.routing.snap import snap_point
+from planner_core.core.geo import LatLon
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.routing.astar import SearchResult, astar
+from planner_core.routing.point_to_point import plan_point_to_point
+from planner_core.routing.snap import snap_point
 from tests.assertions import assert_valid_route
 from tests.fixtures.networks import FAR_AWAY, GRID_NW, GRID_SE, ISLAND
 

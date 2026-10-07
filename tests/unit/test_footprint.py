@@ -12,13 +12,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.core.errors import BuildError
-from mtb_planner.core.units import COORD_SCALE
-from mtb_planner.elevation.dem_catalog import tiles_for_bbox
-from mtb_planner.elevation.footprint import elevation_footprint
-from mtb_planner.ingest.tables import NodeTable, WayTable
-from mtb_planner.ingest.tags import WayTags
-from mtb_planner.ingest.way_filter import BikeAccess, Direction
+from planner_core.core.errors import BuildError
+from planner_core.core.units import COORD_SCALE
+from planner_core.elevation.dem_catalog import tiles_for_bbox
+from planner_core.elevation.footprint import elevation_footprint
+from planner_core.ingest.tables import NodeTable, WayTable
+from planner_core.ingest.tags import WayTags
+from planner_core.sport import Access, Direction
 
 pytestmark = pytest.mark.unit
 
@@ -48,7 +48,7 @@ def _tables(
         node_offset=np.concatenate([[0], np.cumsum(lengths)]).astype(np.int64),
         node_refs=np.asarray(refs, dtype=np.int64),
         tags=tuple(tags for _, tags in ways),
-        access=np.full(len(ways), BikeAccess.YES, dtype=np.uint8),
+        access=np.full(len(ways), Access.YES, dtype=np.uint8),
         direction=np.full(len(ways), Direction.BOTH, dtype=np.uint8),
         oneway_corroborated=np.zeros(len(ways), dtype=np.bool_),
     )

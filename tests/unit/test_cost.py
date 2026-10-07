@@ -15,27 +15,22 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mtb_planner.core.errors import BuildError
-from mtb_planner.core.units import MAX_SPEED_M_S, MIN_SPEED_M_S
-from mtb_planner.cost.costvector import TECH_CEILING_MARGIN, materialise, preference
-from mtb_planner.cost.profiles import (
-    DEFAULT_PROFILES_PATH,
-    FEATURE_NAMES,
-    get_profile,
-    load_profiles,
-)
-from mtb_planner.cost.speed import (
+from mtb_planner.speed import (
     DESCENT_CAP_M_S,
-    GRADE_BAND_CENTRES,
     ROLLING_RESISTANCE,
-    TECH_BUCKETS,
     Rider,
     solve_speed,
     speed_table,
 )
-from mtb_planner.elevation.profile import GRADE_BANDS
-from mtb_planner.features.enums import PAVED_SURFACES, SurfaceClass
-from mtb_planner.graph.store import GraphStore
+from mtb_planner.sport import MTB
+from planner_core.core.errors import BuildError
+from planner_core.core.units import MAX_SPEED_M_S, MIN_SPEED_M_S
+from planner_core.cost.costvector import TECH_CEILING_MARGIN, materialise, preference
+from planner_core.cost.profiles import FEATURE_NAMES, get_profile, load_profiles
+from planner_core.cost.speed import GRADE_BAND_CENTRES, TECH_BUCKETS
+from planner_core.elevation.profile import GRADE_BANDS
+from planner_core.features.enums import PAVED_SURFACES, SurfaceClass
+from planner_core.graph.store import GraphStore
 
 pytestmark = pytest.mark.unit
 
@@ -152,18 +147,18 @@ def test_a_cautious_rider_descends_slower():
 
 
 def test_the_shipped_profiles_load():
-    profiles = load_profiles(DEFAULT_PROFILES_PATH)
+    profiles = load_profiles(MTB.profiles_path)
 
     assert {"xc", "flow", "tech", "gravity"} <= set(profiles)
 
 
 def test_every_shipped_profile_weights_only_known_features():
-    for profile in load_profiles(DEFAULT_PROFILES_PATH).values():
+    for profile in load_profiles(MTB.profiles_path).values():
         assert len(profile.weights) == len(FEATURE_NAMES)
 
 
 def test_profiles_differ_in_what_they_want():
-    profiles = load_profiles(DEFAULT_PROFILES_PATH)
+    profiles = load_profiles(MTB.profiles_path)
 
     # The whole point: a tech rider is looking for rougher ground than an
     # XC rider, and will detour further to find it.
@@ -179,7 +174,7 @@ def test_the_gravity_profile_rewards_descent_and_resents_climbing():
 
 
 def test_every_profile_penalises_traffic():
-    for profile in load_profiles(DEFAULT_PROFILES_PATH).values():
+    for profile in load_profiles(MTB.profiles_path).values():
         assert profile.weight_of("traffic") < 0.0
 
 
@@ -189,7 +184,7 @@ def test_an_unknown_profile_names_the_alternatives():
 
 
 def test_a_missing_profile_file_is_reported_clearly(tmp_path: Path):
-    with pytest.raises(BuildError, match="No ride profiles"):
+    with pytest.raises(BuildError, match="No profiles"):
         load_profiles(tmp_path / "absent.yaml")
 
 

@@ -15,15 +15,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.core.geo import LatLon
-from mtb_planner.cost.costvector import materialise
-from mtb_planner.cost.profiles import MAX_DETOUR, RideProfile
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.point_to_point import PointToPointPlan, plan_point_to_point
-from mtb_planner.routing.router import Router
-from mtb_planner.routing.slack import spend_slack
-from mtb_planner.routing.snap import snap_point
+from planner_core.core.geo import LatLon
+from planner_core.cost.costvector import materialise
+from planner_core.cost.profiles import MAX_DETOUR, RideProfile
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.routing.point_to_point import PointToPointPlan, plan_point_to_point
+from planner_core.routing.router import Router
+from planner_core.routing.slack import spend_slack
+from planner_core.routing.snap import snap_point
 from tests.fixtures.networks import LATTICE_NE, LATTICE_SW
 
 pytestmark = pytest.mark.unit

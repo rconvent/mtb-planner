@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import pytest
 
-from mtb_planner.features.classify import classify_way, singletrack_score, traffic_exposure
-from mtb_planner.features.difficulty import UPHILL_DISCOUNT, Difficulty, estimate_difficulty
-from mtb_planner.features.enums import SurfaceClass, TechConfidence, WayClass
-from mtb_planner.features.surface import classify_surface, rollability, surface_is_explicit
-from mtb_planner.ingest.tags import WayTags
+from mtb_planner.difficulty import UPHILL_DISCOUNT, estimate_difficulty
+from planner_core.features.classify import classify_way, singletrack_score, traffic_exposure
+from planner_core.features.enums import SurfaceClass, TechConfidence, WayClass
+from planner_core.features.surface import classify_surface, rollability, surface_is_explicit
+from planner_core.ingest.tags import WayTags
+from planner_core.sport import Difficulty
 
 pytestmark = pytest.mark.unit
 

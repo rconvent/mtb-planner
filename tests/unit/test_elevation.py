@@ -15,16 +15,16 @@ import pytest
 import rasterio
 from rasterio.transform import from_origin
 
-from mtb_planner.core.errors import DemTileMissingError
-from mtb_planner.core.geo import BBox
-from mtb_planner.elevation.dem_catalog import DemTile, tile_for, tiles_for_bbox
-from mtb_planner.elevation.dem_sampler import DemSampler, require_tiles
-from mtb_planner.elevation.dem_unpublished import (
+from planner_core.core.errors import DemTileMissingError
+from planner_core.core.geo import BBox
+from planner_core.elevation.dem_catalog import DemTile, tile_for, tiles_for_bbox
+from planner_core.elevation.dem_sampler import DemSampler, require_tiles
+from planner_core.elevation.dem_unpublished import (
     load_unpublished,
     record_unpublished,
     registry_path,
 )
-from mtb_planner.elevation.profile import (
+from planner_core.elevation.profile import (
     DEAD_BAND_M,
     GRADE_BANDS,
     EdgeElevation,
@@ -153,7 +153,7 @@ def test_sampling_nothing_is_not_an_error(ramp_tile: Path):
 def test_required_tiles_are_checked_before_a_build_starts(tmp_path: Path):
     # A gap found mid-build has already cost the ingest, and a graph flat in
     # one region looks perfectly valid from outside.
-    with pytest.raises(DemTileMissingError, match="mtb fetch dem"):
+    with pytest.raises(DemTileMissingError, match="fetch dem"):
         require_tiles(tmp_path, [DemTile(lat=49, lon=6)])
 
 

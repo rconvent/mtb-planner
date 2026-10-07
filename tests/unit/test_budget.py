@@ -15,16 +15,16 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.core.errors import NoRouteFoundError
-from mtb_planner.core.geo import LatLon
-from mtb_planner.cost.costvector import materialise
-from mtb_planner.cost.profiles import RideProfile
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.budget import INITIAL_SETTLE_CEILING, SETTLE_GROWTH, Deadline
-from mtb_planner.routing.kernels import warm_up
-from mtb_planner.routing.point_to_point import plan_point_to_point
-from mtb_planner.routing.router import Router
+from planner_core.core.errors import NoRouteFoundError
+from planner_core.core.geo import LatLon
+from planner_core.cost.costvector import materialise
+from planner_core.cost.profiles import RideProfile
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.routing.budget import INITIAL_SETTLE_CEILING, SETTLE_GROWTH, Deadline
+from planner_core.routing.kernels import warm_up
+from planner_core.routing.point_to_point import plan_point_to_point
+from planner_core.routing.router import Router
 from tests.fixtures.networks import GRID_NW, GRID_SE
 
 pytestmark = pytest.mark.unit

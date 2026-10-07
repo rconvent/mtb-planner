@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from mtb_planner.core.errors import PbfParseError
-from mtb_planner.core.geo import BBox
-from mtb_planner.ingest.pbf_reader import IngestResult, read_extracts
-from mtb_planner.ingest.way_filter import BikeAccess, Direction
+from planner_core.core.errors import PbfParseError
+from planner_core.core.geo import BBox
+from planner_core.ingest.pbf_reader import IngestResult, read_extracts
+from planner_core.sport import Access, Direction
 from tests.fixtures.networks import border_pair, empty_of_ways, single_track
 
 pytestmark = pytest.mark.unit
@@ -62,7 +62,7 @@ def test_only_nodes_referenced_by_kept_ways_are_loaded(ardennes_ingest: IngestRe
 
 
 def test_steps_are_kept_as_a_pushing_section(ardennes_ingest: IngestResult):
-    assert ardennes_ingest.ways.row(204).access is BikeAccess.DISMOUNT
+    assert ardennes_ingest.ways.row(204).access is Access.WALK
 
 
 def test_a_corroborated_oneway_descent_stays_directional(ardennes_ingest: IngestResult):
@@ -85,7 +85,7 @@ def test_node_references_round_trip_through_the_columnar_layout(ardennes_ingest:
 
 
 def test_mtb_route_relations_are_collected(ardennes_ingest: IngestResult):
-    routes = ardennes_ingest.mtb_routes
+    routes = ardennes_ingest.signed_routes()
 
     assert len(routes) == 1
     relation = next(iter(routes.values()))
@@ -99,7 +99,7 @@ def test_bicycle_routes_are_kept_separately_from_mtb_routes(ardennes_ingest: Ing
     # mistaken for signed mountain-bike loops.
     assert 901 in ardennes_ingest.route_relations
     assert ardennes_ingest.route_relations[901].route_type == "bicycle"
-    assert 901 not in ardennes_ingest.mtb_routes
+    assert 901 not in ardennes_ingest.signed_routes()
 
 
 def test_ways_are_mapped_back_to_the_routes_that_contain_them(ardennes_ingest: IngestResult):
@@ -184,7 +184,7 @@ def test_no_paths_at_all_is_an_error():
 
 
 def test_an_extract_with_nothing_rideable_fails_loudly(tmp_path: Path):
-    with pytest.raises(PbfParseError, match="No bike-relevant ways"):
+    with pytest.raises(PbfParseError, match="No mtb ways"):
         read_extracts([empty_of_ways(tmp_path)])
 
 

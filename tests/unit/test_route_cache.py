@@ -13,9 +13,9 @@ import threading
 import numpy as np
 import pytest
 
-from mtb_planner.core.errors import RouteExpiredError
-from mtb_planner.routing.result import Route, RouteStats
-from mtb_planner.services.route_cache import CachedRoute, RouteCache
+from planner_core.core.errors import RouteExpiredError
+from planner_core.routing.result import Route, RouteStats
+from planner_core.services.route_cache import CachedRoute, RouteCache
 
 pytestmark = pytest.mark.unit
 
@@ -26,7 +26,7 @@ def a_route(distance_m: float = 12_340.0) -> Route:
         arcs=(0, 1),
         nodes=(0, 1, 2),
         geometry=np.array([[50.100, 5.100], [50.101, 5.101], [50.102, 5.102]]),
-        stats=RouteStats(distance_m=distance_m, n_edges=2, n_points=3, dismount_m=0.0),
+        stats=RouteStats(distance_m=distance_m, n_edges=2, n_points=3, walk_m=0.0),
     )
 
 

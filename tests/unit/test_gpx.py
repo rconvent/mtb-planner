@@ -12,12 +12,12 @@ import gpxpy
 import numpy as np
 import pytest
 
-from mtb_planner.core.geo import LatLon
-from mtb_planner.export.gpx import ACCESS_DISCLAIMER, route_to_gpx, write_gpx
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.point_to_point import plan_point_to_point
-from mtb_planner.routing.result import Route, build_route
+from planner_core.core.geo import LatLon
+from planner_core.export.gpx import ACCESS_DISCLAIMER, route_to_gpx, write_gpx
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.routing.point_to_point import plan_point_to_point
+from planner_core.routing.result import Route, build_route
 from tests.fixtures.networks import GRID_NW, GRID_SE
 
 pytestmark = pytest.mark.unit

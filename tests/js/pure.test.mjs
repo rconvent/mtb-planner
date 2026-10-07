@@ -18,7 +18,7 @@ import {
   techColour,
   techColourExpression,
   techOklch,
-} from "../../src/mtb_planner/web/static/js/ramp.js";
+} from "../../src/planner_core/web/static/js/ramp.js";
 import {
   along,
   coordinate,
@@ -27,7 +27,7 @@ import {
   kilometres,
   metres,
   percent,
-} from "../../src/mtb_planner/web/static/js/format.js";
+} from "../../src/planner_core/web/static/js/format.js";
 import {
   DEFAULTS,
   MAX_MINUTES,
@@ -35,7 +35,7 @@ import {
   parsePoint,
   readState,
   writeState,
-} from "../../src/mtb_planner/web/static/js/urlstate.js";
+} from "../../src/planner_core/web/static/js/urlstate.js";
 
 describe("the difficulty ramp", () => {
   it("covers the whole mtb:scale ordinal", () => {
@@ -134,7 +134,7 @@ describe("the difficulty ramp", () => {
     // Two copies exist because a canvas cannot read a custom property. This is
     // what stops them drifting apart.
     const css = readFileSync(
-      new URL("../../src/mtb_planner/web/static/css/tokens.css", import.meta.url),
+      new URL("../../src/planner_core/web/static/css/tokens.css", import.meta.url),
       "utf8"
     );
 

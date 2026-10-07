@@ -13,17 +13,32 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from mtb_planner import ARTIFACT_SCHEMA_VERSION, COST_MODEL_VERSION
-from mtb_planner.api.app import create_app
-from mtb_planner.config.settings import get_settings
-from mtb_planner.cost.profiles import RideProfile, get_profile
-from mtb_planner.graph.builder import build_graph
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.ingest.pbf_reader import IngestResult, read_extracts
-from mtb_planner.routing.kernels import warm_up
-from mtb_planner.services.graph_registry import GraphRegistry, LoadedGraph, get_registry
+from mtb_planner import COST_MODEL_VERSION
+from mtb_planner.sport import MTB
+from planner_core import ARTIFACT_SCHEMA_VERSION
+from planner_core.api.app import create_app
+from planner_core.config.settings import get_settings
+from planner_core.cost.profiles import RideProfile, get_profile
+from planner_core.graph.builder import build_graph
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.ingest.pbf_reader import IngestResult, read_extracts
+from planner_core.routing.kernels import warm_up
+from planner_core.services.graph_registry import GraphRegistry, LoadedGraph, get_registry
+from planner_core.sport import activate
 from tests.fixtures.networks import ardennes_like, lattice
+
+# The suite plans for bikes unless a test says otherwise. Activated at import,
+# before any fixture, because session fixtures build graphs and those read the
+# sport's access rules.
+activate(MTB)
+
+
+@pytest.fixture(autouse=True)
+def _active_sport() -> Iterator[None]:
+    """Put the bike back after any test that switched sport."""
+    yield
+    activate(MTB)
 
 
 @pytest.fixture(autouse=True)
@@ -55,7 +70,9 @@ def _isolated_data_dir(
     passed on CI while failing here. Tests that want a graph publish one into
     the registry themselves.
     """
-    monkeypatch.setenv("MTB_DATA_DIR", str(tmp_path_factory.mktemp("empty-data")))
+    empty = str(tmp_path_factory.mktemp("empty-data"))
+    monkeypatch.setenv("MTB_DATA_DIR", empty)
+    monkeypatch.setenv("TRAIL_DATA_DIR", empty)
     get_settings.cache_clear()
 
 

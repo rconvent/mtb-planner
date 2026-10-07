@@ -12,10 +12,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.cost.costvector import materialise
-from mtb_planner.cost.profiles import RideProfile
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.candidates import (
+from planner_core.cost.costvector import materialise
+from planner_core.cost.profiles import RideProfile
+from planner_core.graph.store import GraphStore
+from planner_core.routing.candidates import (
     DEFAULT_WEIGHTS,
     LoopMetrics,
     diversify,

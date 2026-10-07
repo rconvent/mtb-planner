@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import pytest
 
-from mtb_planner import ARTIFACT_SCHEMA_VERSION, COST_MODEL_VERSION
-from mtb_planner.core.errors import GraphNotLoadedError
-from mtb_planner.graph.manifest import build_manifest
-from mtb_planner.graph.serialize import graph_counts
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.services.graph_registry import GraphRegistry, LoadedGraph, get_registry
+from mtb_planner import COST_MODEL_VERSION
+from planner_core import ARTIFACT_SCHEMA_VERSION
+from planner_core.core.errors import GraphNotLoadedError
+from planner_core.graph.manifest import build_manifest
+from planner_core.graph.serialize import graph_counts
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.services.graph_registry import GraphRegistry, LoadedGraph, get_registry
 
 pytestmark = pytest.mark.unit
 

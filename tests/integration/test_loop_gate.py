@@ -23,15 +23,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mtb_planner.core.errors import PlanningError
-from mtb_planner.core.geo import LatLon
-from mtb_planner.cost.profiles import get_profile
-from mtb_planner.cost.speed import Rider
-from mtb_planner.graph.serialize import load_artifact
-from mtb_planner.graph.spatial_index import SpatialIndex
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.routing.kernels import warm_up
-from mtb_planner.routing.loop import LoopRequest, plan_loops
+from mtb_planner.speed import Rider
+from planner_core.core.errors import PlanningError
+from planner_core.core.geo import LatLon
+from planner_core.cost.profiles import get_profile
+from planner_core.graph.serialize import load_artifact
+from planner_core.graph.spatial_index import SpatialIndex
+from planner_core.graph.store import GraphStore
+from planner_core.routing.kernels import warm_up
+from planner_core.routing.loop import LoopRequest, plan_loops
 
 ARTIFACT = Path("data/graph/lux-v1")
 
@@ -93,7 +93,7 @@ def outcomes(
             start=start,
             budget_s=budget * 60.0,
             profile=get_profile("tech"),
-            rider=Rider(),
+            athlete=Rider(),
             variants=REQUIRED_LOOPS,
         )
         began = time.perf_counter()

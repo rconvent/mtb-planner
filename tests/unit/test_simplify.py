@@ -11,11 +11,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mtb_planner.graph.segments import Segment, split_ways
-from mtb_planner.graph.simplify import contract
-from mtb_planner.graph.store import GraphStore
-from mtb_planner.ingest.pbf_reader import IngestResult
-from mtb_planner.ingest.way_filter import Direction
+from planner_core.graph.segments import Segment, split_ways
+from planner_core.graph.simplify import contract
+from planner_core.graph.store import GraphStore
+from planner_core.ingest.pbf_reader import IngestResult
+from planner_core.sport import Direction
 
 pytestmark = pytest.mark.unit
 

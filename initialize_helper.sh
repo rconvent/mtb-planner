@@ -7,3 +7,8 @@ uv run mtb build --pbf data/osm/belgium-latest.osm.pbf --artifact be-v1
 uv run mtb inspect data/graph/be-v1
 uv run mtb serve --artifact be-v1
 
+
+# Trail running reuses the same downloads; only the graph is built separately.
+# uv run mtb serve blocks above, so run these from a second terminal.
+# uv run trail build --pbf data/osm/belgium-latest.osm.pbf --artifact be-v1
+# uv run trail serve --artifact be-v1

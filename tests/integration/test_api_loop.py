@@ -17,8 +17,8 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from mtb_planner.api.concurrency import PlanSlots
-from mtb_planner.api.deps import plan_slots, route_cache
+from planner_core.api.concurrency import PlanSlots
+from planner_core.api.deps import plan_slots, route_cache
 from tests.fixtures.networks import FAR_AWAY, GRID_NW, LATTICE_CENTRE
 
 pytestmark = pytest.mark.integration
@@ -177,7 +177,7 @@ def test_loops_land_on_the_requested_budget(lattice_client: TestClient):
 
 def test_a_loop_that_must_be_walked_says_so(lattice_client: TestClient):
     for entry in ask(lattice_client).json()["data"]["loops"]:
-        if entry["stats"]["dismount_m"] > 0:
+        if entry["stats"]["walk_m"] > 0:
             assert any("walked" in note for note in entry["warnings"])
 
 
@@ -320,7 +320,7 @@ def test_an_unknown_profile_is_the_clients_mistake(lattice_client: TestClient):
         ("variants", 7),
         ("tech_target", 6.5),
         ("detour", -1.0),
-        ("power_w", 20.0),
+        ("effort", 20.0),
     ],
 )
 def test_out_of_range_requests_are_rejected_at_the_boundary(
